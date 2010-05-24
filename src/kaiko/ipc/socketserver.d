@@ -24,17 +24,19 @@ class SocketServer {
     if (!this.socket_) {
       return false;
     }
-    this.socket_.blocking = false;
-    Socket socket;
-    try {
-       socket = this.socket_.accept();
-    } catch (SocketAcceptException) {
+    auto socketSet = new SocketSet(1);
+    socketSet.add(this.socket_);
+    switch (Socket.select(socketSet, null, null, 0)) {
+    case 0:  // timeout
+    case -1: // EINTR
       this.lastAcceptedClient_ = null;
       return true;
+    default:
+      Socket socket = this.socket_.accept();
+      assert(socket);
+      this.lastAcceptedClient_ = new SocketClient(socket);
+      return true;
     }
-    assert(socket);
-    this.lastAcceptedClient_ = new SocketClient(socket);
-    return true;
   }
 
   public void close() {
@@ -45,14 +47,17 @@ class SocketServer {
     }
   }
 
+  @property
   public SocketClient lastAcceptedClient() {
     return this.lastAcceptedClient_;
   }
 
+  @property
   public ushort port() const {
     return this.port_;
   }
 
+  @property
   package Socket socket() {
     return this.socket_;
   }
@@ -62,7 +67,7 @@ import std.stdio;
 
 unittest {
   auto server = new SocketServer();
-  scope(exit) { server.close(); }
+  scope (exit) { server.close(); }
 
   assert(server.accept());
   assert(server.port);
@@ -70,7 +75,7 @@ unittest {
   clients ~= new SocketClient("127.0.0.1", server.port);
   clients ~= new SocketClient("127.0.0.1", server.port);
   clients ~= new SocketClient("127.0.0.1", server.port);
-  scope(exit) {
+  scope (exit) {
     foreach (client; clients) {
       client.close();
     }
@@ -90,7 +95,7 @@ unittest {
     assert(server.accept());
     clientsInServer[2] = server.lastAcceptedClient;
   } while (!clientsInServer[2]);
-  scope(exit) {
+  scope (exit) {
     foreach (client; clientsInServer) {
       client.close();
     }
@@ -105,9 +110,10 @@ unittest {
   assert(clients[2].socket.remoteAddress.toString() == clientsInServer[2].socket.localAddress.toString());
   assert(clients[2].socket.localAddress.toString() == clientsInServer[2].socket.remoteAddress.toString());
 
-  assert(clients[0].send(cast(const(byte[]))"foo"));
-  assert(clients[0].send(cast(const(byte[]))"bar"));
-  assert(clients[0].send(cast(const(byte[]))"baz"));
+  clients[0].addDataToSend(cast(const(byte[]))"foo");
+  clients[0].addDataToSend(cast(const(byte[]))"bar");
+  clients[0].addDataToSend(cast(const(byte[]))"baz");
+  assert(clients[0].send());
   {
     byte[] receivedData;
     do {
@@ -121,9 +127,10 @@ unittest {
     assert("" == clientsInServer[0].lastReceivedData);
   }
 
-  assert(clientsInServer[1].send(cast(const(byte[]))"FOO"));
-  assert(clientsInServer[1].send(cast(const(byte[]))"BAR"));
-  assert(clientsInServer[1].send(cast(const(byte[]))"BAZ"));
+  clientsInServer[1].addDataToSend(cast(const(byte[]))"FOO");
+  clientsInServer[1].addDataToSend(cast(const(byte[]))"BAR");
+  clientsInServer[1].addDataToSend(cast(const(byte[]))"BAZ");
+  assert(clientsInServer[1].send());
   {
     byte[] receivedData;
     do {
@@ -141,10 +148,10 @@ unittest {
 unittest {
   // send empty data
   auto server = new SocketServer();
-  scope(exit) { server.close(); }
+  scope (exit) { server.close(); }
 
   auto client = new SocketClient("127.0.0.1", server.port);
-  scope(exit) { server.close(); }
+  scope (exit) { server.close(); }
 
   SocketClient clientInServer;
   do {
@@ -152,19 +159,18 @@ unittest {
     clientInServer = server.lastAcceptedClient;
   } while (!clientInServer);
 
-  byte[] data;
-  assert(client.send(data));
+  assert(client.send());
   client.close();
-  assert(!client.send(data));
+  assert(!client.send());
 }
 
 unittest {
   // send big data
   auto server = new SocketServer();
-  scope(exit) { server.close(); }
+  scope (exit) { server.close(); }
 
   auto client = new SocketClient("127.0.0.1", server.port);
-  scope(exit) { server.close(); }
+  scope (exit) { server.close(); }
 
   SocketClient clientInServer;
   do {
@@ -174,7 +180,8 @@ unittest {
 
   byte[] sentData;
   sentData.length = 16777216;
-  assert(client.send(sentData));
+  client.addDataToSend(sentData);
+  assert(client.send());
   
   byte[] receivedData;
   do {

@@ -2,12 +2,12 @@ module kaiko.ipc.socketclient;
 
 import std.c.windows.winsock;
 import std.socket;
-import std.stdio;
 
 class SocketClient {
 
   private Socket socket_;
   private byte[] lastReceivedData_;
+  private byte[] dataToSend_;
 
   public this(string ip, ushort port) {
     this.socket_ = new Socket(AddressFamily.INET, SocketType.STREAM, ProtocolType.TCP);
@@ -20,6 +20,10 @@ class SocketClient {
     this.socket_ = socket;
   }
 
+  public void addDataToSend(const(byte[]) data) {
+    this.dataToSend_ ~= data;
+  }
+
   public void close() {
     if (this.socket_) {
       this.socket_.shutdown(SocketShutdown.BOTH);
@@ -28,6 +32,7 @@ class SocketClient {
     }
   }
 
+  @property
   public const(byte[]) lastReceivedData() const {
     return this.lastReceivedData_;
   }
@@ -36,7 +41,16 @@ class SocketClient {
     if (!this.socket_) {
       return false;
     }
-    this.socket_.blocking = false;
+    auto socketSet = new SocketSet(1);
+    socketSet.add(this.socket_);
+    switch (Socket.select(socketSet, null, null, 0)) {
+    case 0:  // timeout
+    case -1: // EINTR
+      this.lastReceivedData_.length = 0;
+      return true;
+    default:
+      break;
+    }
     byte[4096] buffer;
     immutable receivedLength = this.socket_.receive(buffer);
     switch (receivedLength) {
@@ -44,44 +58,43 @@ class SocketClient {
       this.lastReceivedData_.length = 0;
       return false;
     case Socket.ERROR:
-      if (.WSAGetLastError() == .WSAEWOULDBLOCK) {
-        this.lastReceivedData_.length = 0;
-        return true;
-      } else {
-        throw new SocketException("Receving error", .WSAGetLastError());
-      }
+      throw new SocketException("Socket recv error", .WSAGetLastError());
     default:
       this.lastReceivedData_ = buffer[0..receivedLength];
       return true;
     }
   }
 
-  public bool send(const(byte[]) data) {
+  public bool send() {
     if (!this.socket_) {
       return false;
     }
-    if (!data.length) {
+    if (!this.dataToSend_.length) {
       return true;
     }
-    this.socket_.blocking = false;
-    immutable sentLength = this.socket_.send(data);
+    auto socketSet = new SocketSet(1);
+    socketSet.add(this.socket_);
+    switch (Socket.select(null, socketSet, null, 0)) {
+    case 0:  // timeout
+    case -1: // EINTR
+      return true;
+    default:
+      break;
+    }
+    immutable sentLength = this.socket_.send(this.dataToSend_);
     switch (sentLength) {
     case 0:
       return false;
     case Socket.ERROR:
-      if (.WSAGetLastError() == .WSAEWOULDBLOCK) {
-        return true;
-      } else {
-        throw new SocketException("Sending error", .WSAGetLastError());
-      }
+      throw new SocketException("Socket send error", .WSAGetLastError());
     default:
-      if (data.length != sentLength) {
-        throw new SocketException("Sending error", .WSAGetLastError());
-      }
+      assert(sentLength <= this.dataToSend_.length);
+      this.dataToSend_ = this.dataToSend_[sentLength..$];
       return true;
     }
   }
 
+  @property
   package Socket socket() {
     return this.socket_;
   }
