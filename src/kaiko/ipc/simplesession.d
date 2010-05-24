@@ -21,7 +21,7 @@ class SimpleSession(TransportClient) {
     this.transportClient_ = transportClient;
   }
  
-  public void addDataToSend(const(byte[]) data) {
+  public void addDataToSend(in byte[] data) {
     this.dataCollectionToSend_ ~= data.dup;
   }
 
@@ -139,7 +139,7 @@ class SimpleSession(TransportClient) {
 unittest {
   class MockTransportClient {
     private byte[] lastReceivedData_;
-    public void addDataToSend(const(byte[]) data) {
+    public void addDataToSend(in byte[] data) {
     }
     public void close() {
     }
@@ -157,7 +157,7 @@ unittest {
   auto simpleSession = new SimpleSession!MockTransportClient(new MockTransportClient);
 }
 
-private int bytesToLength(const(byte[]) bytes, out int readBytesNum) {
+private int bytesToLength(in byte[] bytes, out int readBytesNum) {
   int length = 0;
   readBytesNum = 0;
   foreach (b; bytes) {

@@ -9,7 +9,7 @@ class SocketClient {
   private byte[] lastReceivedData_;
   private byte[] dataToSend_;
 
-  public this(string ip, ushort port) {
+  public this(in string ip, in ushort port) {
     this.socket_ = new Socket(AddressFamily.INET, SocketType.STREAM, ProtocolType.TCP);
     this.socket_.connect(new InternetAddress(ip, port));
   }
@@ -20,7 +20,7 @@ class SocketClient {
     this.socket_ = socket;
   }
 
-  public void addDataToSend(const(byte[]) data) {
+  public void addDataToSend(in byte[] data) {
     this.dataToSend_ ~= data;
   }
 
@@ -33,7 +33,7 @@ class SocketClient {
   }
 
   @property
-  public const(byte[]) lastReceivedData() const {
+  public const(byte[]) lastReceivedData() {
     return this.lastReceivedData_;
   }
 
@@ -46,7 +46,7 @@ class SocketClient {
     switch (Socket.select(socketSet, null, null, 0)) {
     case 0:  // timeout
     case -1: // EINTR
-      this.lastReceivedData_.length = 0;
+      this.lastReceivedData_ = null;
       return true;
     default:
       break;
@@ -55,7 +55,7 @@ class SocketClient {
     immutable receivedLength = this.socket_.receive(buffer);
     switch (receivedLength) {
     case 0:
-      this.lastReceivedData_.length = 0;
+      this.lastReceivedData_ = null;
       return false;
     case Socket.ERROR:
       throw new SocketException("Socket recv error", .WSAGetLastError());
@@ -98,4 +98,5 @@ class SocketClient {
   package Socket socket() {
     return this.socket_;
   }
+
 }

@@ -13,7 +13,7 @@ class SocketServer {
     this(InternetAddress.PORT_ANY);
   }
 
-  public this(ushort port) {
+  public this(in ushort port) {
     this.socket_ = new Socket(AddressFamily.INET, SocketType.STREAM, ProtocolType.TCP);
     this.socket_.bind(new InternetAddress(port));
     this.socket_.listen(10);
@@ -61,6 +61,7 @@ class SocketServer {
   package Socket socket() {
     return this.socket_;
   }
+
 }
 
 import std.stdio;
@@ -126,6 +127,9 @@ unittest {
     assert(clientsInServer[0].receive());
     assert("" == clientsInServer[0].lastReceivedData);
   }
+  assert(clients[0].send());
+  assert(clientsInServer[0].receive());
+  assert("" == clientsInServer[0].lastReceivedData);
 
   clientsInServer[1].addDataToSend(cast(const(byte[]))"FOO");
   clientsInServer[1].addDataToSend(cast(const(byte[]))"BAR");
@@ -143,6 +147,9 @@ unittest {
     assert(clients[1].receive());
     assert("" == clients[1].lastReceivedData);
   }
+  assert(clientsInServer[1].send());
+  assert(clients[1].receive());
+  assert("" == clients[1].lastReceivedData);
 }
 
 unittest {
