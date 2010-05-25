@@ -11,10 +11,10 @@ class SimpleSession(TransportClient) {
 
   private TransportClient transportClient_;
   private bool isActive_ = true;
-  private byte[] lastReceivedData_;
+  private const(byte)[][] lastReceivedDataCollection_;
   private ReceivingState receivingState_ = ReceivingState.Init;
   private int restLengthToRead_;
-  private byte[] bufferedData_;
+  private const(byte)[] bufferedData_;
 
   public this(TransportClient transportClient) {
     this.transportClient_ = transportClient;
@@ -34,7 +34,7 @@ class SimpleSession(TransportClient) {
   public void close() {
     this.transportClient_.close();
     this.isActive_ = false;
-    this.lastReceivedData_ = null;
+    this.lastReceivedDataCollection_ = null;
     this.receivingState_ = ReceivingState.Terminated;
     this.restLengthToRead_ = 0;
     this.bufferedData_ = null;
@@ -42,7 +42,11 @@ class SimpleSession(TransportClient) {
 
   @property
   public const(byte[]) lastReceivedData() {
-    return this.lastReceivedData_;
+    if (this.lastReceivedDataCollection_.length) {
+      return this.lastReceivedDataCollection_[0];
+    } else {
+      return null;
+    }
   }
 
   public bool receive() {
@@ -54,69 +58,73 @@ class SimpleSession(TransportClient) {
       return false;
     }
     this.bufferedData_ ~= this.transportClient_.lastReceivedData;
+    return this.moveNext();
+  }
+
+  private bool moveNext() {
+    if (this.lastReceivedDataCollection_.length) {
+      this.lastReceivedDataCollection_ = this.lastReceivedDataCollection_[1..$];
+    }
+  Loop:
     for (;;) {
       if (!this.bufferedData_.length) {
-        this.lastReceivedData_ = null;
-        return true;
+        break Loop;
       }
       assert(0 < this.bufferedData_.length);
       final switch (this.receivingState_) {
       case ReceivingState.Init:
         assert(!this.restLengthToRead_);
         if (this.bufferedData_[0] == cast(byte)0x80) {
-          this.bufferedData_ = this.bufferedData_[1..$].dup;
+          this.bufferedData_ = this.bufferedData_[1..$];
           this.receivingState_ = ReceivingState.Length;
         } else {
-          goto Failed;
+          this.receivingState_ = ReceivingState.Terminated;
         }
         break;
       case ReceivingState.Length:
         assert(!this.restLengthToRead_);
-        {
-          int length;
-          int readBytesNum;
-          try {
-            length = bytesToLength(this.bufferedData_, readBytesNum);
-          } catch (Exception) {
-            // TODO: logging
-            goto Failed;
-          }
-          if (!readBytesNum) {
-            return true;
-          }
-          assert(0 <= length);
-          assert(0 <= readBytesNum);
-          assert(readBytesNum <= this.bufferedData_.length);
+        int length, readBytesNum;
+        try {
+          length = bytesToLength(this.bufferedData_, readBytesNum);
+        } catch (Exception) {
+          // TODO: logging
+          this.receivingState_ = ReceivingState.Terminated;
+          break;
+        }
+        assert(0 <= length);
+        assert(0 <= readBytesNum);
+        assert(readBytesNum <= this.bufferedData_.length);
+        this.bufferedData_ = this.bufferedData_[readBytesNum..$];
+        if (length) {
           this.restLengthToRead_ = length;
-          this.bufferedData_ = this.bufferedData_[readBytesNum..$].dup;
-          if (length) {
-            this.receivingState_ = ReceivingState.Data;
-          } else {
-            // empty size
-            // TODO: logging
-            this.receivingState_ = ReceivingState.Init;
-          }
+          this.receivingState_ = ReceivingState.Data;
+        } else {
+          // empty size
+          // TODO: logging
+          this.receivingState_ = ReceivingState.Init;
         }
         break;
       case ReceivingState.Data:
         assert(0 < this.bufferedData_.length);
         assert(0 < this.restLengthToRead_);
         if (this.bufferedData_.length < this.restLengthToRead_) {
-          this.lastReceivedData_ = null;
-          return true;
+          break Loop;
         }
-        this.lastReceivedData_ = this.bufferedData_[0..this.restLengthToRead_].dup;
-        this.bufferedData_ = this.bufferedData_[this.restLengthToRead_..$].dup;
+        this.lastReceivedDataCollection_ ~= this.bufferedData_[0..this.restLengthToRead_];
+        this.bufferedData_ = this.bufferedData_[this.restLengthToRead_..$];
         this.receivingState_ = ReceivingState.Init;
         this.restLengthToRead_ = 0;
-        return true;
+        break;
       case ReceivingState.Terminated:
-        assert(0);
+        if (this.lastReceivedDataCollection_.length) {
+          return true;
+        } else {
+          this.close();
+          return false;
+        }
       }
     }
-  Failed:
-    this.close();
-    return false;
+    return true;
   }
 
   public bool send() {
@@ -146,7 +154,7 @@ unittest {
     }
     @property
     public const(byte[]) lastReceivedData() {
-      if (this.receivedDataCollection_) {
+      if (this.receivedDataCollection_.length) {
         return this.receivedDataCollection_[0];
       } else {
         return null;
@@ -156,8 +164,8 @@ unittest {
       if (this.isClosed_) {
         return false;
       }
-      if (this.receivedDataCollection_) {
-        this.receivedDataCollection_ = this.receivedDataCollection_[1..$].dup;
+      if (this.receivedDataCollection_.length) {
+        this.receivedDataCollection_ = this.receivedDataCollection_[1..$];
       }
       return true;
     }
@@ -168,6 +176,11 @@ unittest {
       this.sentData_ = this.dataToSend_.dup;
       return true;
     }
+  }
+  {
+    auto transportClient = new MockTransportClient;
+    transportClient.receivedDataCollection_ ~= [1, 2, 3];
+    assert([] == transportClient.lastReceivedData);
   }
   // send
   {
@@ -489,7 +502,7 @@ unittest {
   }
 }
 
-private const(byte[]) lengthToBytes(int length) {
+private const(byte[]) lengthToBytes(int length)  {
   byte[] bytes = [length & 0x7f];
   for (;;) {
     length >>= 7;

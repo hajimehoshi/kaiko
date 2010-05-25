@@ -6,17 +6,16 @@ import std.socket;
 class SocketClient {
 
   private Socket socket_;
-  private byte[] lastReceivedData_;
-  private byte[] dataToSend_;
+  private const(byte)[] lastReceivedData_;
+  private const(byte)[] dataToSend_;
 
   public this(in string ip, in ushort port) {
     this.socket_ = new Socket(AddressFamily.INET, SocketType.STREAM, ProtocolType.TCP);
     this.socket_.connect(new InternetAddress(ip, port));
   }
 
-  public this(Socket socket) in {
+  public this(Socket socket) {
     assert(socket);
-  } body {
     this.socket_ = socket;
   }
 
@@ -34,7 +33,7 @@ class SocketClient {
 
   @property
   public const(byte[]) lastReceivedData() {
-    return this.lastReceivedData_.dup;
+    return this.lastReceivedData_;
   }
 
   public bool receive() {
@@ -61,7 +60,7 @@ class SocketClient {
       throw new SocketException("Socket recv error", .WSAGetLastError());
     default:
       assert(receivedLength <= buffer.length);
-      this.lastReceivedData_ = buffer[0..receivedLength].dup;
+      this.lastReceivedData_ = buffer[0..receivedLength].dup; // why?
       return true;
     }
   }
@@ -90,7 +89,7 @@ class SocketClient {
       throw new SocketException("Socket send error", .WSAGetLastError());
     default:
       assert(sentLength <= this.dataToSend_.length);
-      this.dataToSend_ = this.dataToSend_[sentLength..$].dup;
+      this.dataToSend_ = this.dataToSend_[sentLength..$];
       return true;
     }
   }
