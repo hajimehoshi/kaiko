@@ -62,6 +62,11 @@ class SocketServer {
     return this.socket_;
   }
 
+  @property
+  package const(Socket) socket() const {
+    return this.socket_;
+  }
+
 }
 
 unittest {
@@ -109,45 +114,45 @@ unittest {
   assert(clients[2].socket.remoteAddress.toString() == clientsInServer[2].socket.localAddress.toString());
   assert(clients[2].socket.localAddress.toString() == clientsInServer[2].socket.remoteAddress.toString());
 
-  clients[0].addDataToSend(cast(const(byte[]))"foo");
-  clients[0].addDataToSend(cast(const(byte[]))"bar");
-  clients[0].addDataToSend(cast(const(byte[]))"baz");
+  clients[0].addDataToSend(cast(immutable(byte)[])"foo");
+  clients[0].addDataToSend(cast(immutable(byte)[])"bar");
+  clients[0].addDataToSend(cast(immutable(byte)[])"baz");
   assert(clients[0].send());
   {
-    byte[] receivedData;
+    immutable(byte)[] receivedData;
     do {
       assert(clientsInServer[0].receive());
       receivedData ~= clientsInServer[0].lastReceivedData;
     } while (receivedData.length < 9);
     assert("foobarbaz" == receivedData);
     assert(clientsInServer[0].receive());
-    assert("" == clientsInServer[0].lastReceivedData);
+    assert([] == clientsInServer[0].lastReceivedData);
     assert(clientsInServer[0].receive());
-    assert("" == clientsInServer[0].lastReceivedData);
+    assert([] == clientsInServer[0].lastReceivedData);
   }
   assert(clients[0].send());
   assert(clientsInServer[0].receive());
-  assert("" == clientsInServer[0].lastReceivedData);
+  assert([] == clientsInServer[0].lastReceivedData);
 
-  clientsInServer[1].addDataToSend(cast(const(byte[]))"FOO");
-  clientsInServer[1].addDataToSend(cast(const(byte[]))"BAR");
-  clientsInServer[1].addDataToSend(cast(const(byte[]))"BAZ");
+  clientsInServer[1].addDataToSend(cast(immutable(byte)[])"FOO");
+  clientsInServer[1].addDataToSend(cast(immutable(byte)[])"BAR");
+  clientsInServer[1].addDataToSend(cast(immutable(byte)[])"BAZ");
   assert(clientsInServer[1].send());
   {
-    byte[] receivedData;
+    immutable(byte)[] receivedData;
     do {
       assert(clients[1].receive());
       receivedData ~= clients[1].lastReceivedData;
     } while (receivedData.length < 9);
     assert("FOOBARBAZ" == receivedData);
     assert(clients[1].receive());
-    assert("" == clients[1].lastReceivedData);
+    assert([] == clients[1].lastReceivedData);
     assert(clients[1].receive());
-    assert("" == clients[1].lastReceivedData);
+    assert([] == clients[1].lastReceivedData);
   }
   assert(clientsInServer[1].send());
   assert(clients[1].receive());
-  assert("" == clients[1].lastReceivedData);
+  assert([] == clients[1].lastReceivedData);
 }
 
 unittest {
@@ -187,11 +192,11 @@ unittest {
 
   byte[] sentData;
   sentData.length = 16777216;
-  sentData[0..$] = cast(byte)'a';
+  sentData[0..$] = 'a';
   client.addDataToSend(sentData);
   assert(client.send());
   
-  byte[] receivedData;
+  immutable(byte)[] receivedData;
   do {
     assert(clientInServer.receive);
     receivedData ~= clientInServer.lastReceivedData;

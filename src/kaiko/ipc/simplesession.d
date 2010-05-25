@@ -11,10 +11,10 @@ class SimpleSession(TransportClient) {
 
   private TransportClient transportClient_;
   private bool isActive_ = true;
-  private const(byte)[][] lastReceivedDataCollection_;
+  private immutable(byte)[][] lastReceivedDataCollection_;
   private ReceivingState receivingState_ = ReceivingState.Init;
   private int restLengthToRead_;
-  private const(byte)[] bufferedData_;
+  private immutable(byte)[] bufferedData_;
 
   public this(TransportClient transportClient) {
     this.transportClient_ = transportClient;
@@ -26,7 +26,7 @@ class SimpleSession(TransportClient) {
       // TODO: logging
       return;
     }
-    this.transportClient_.addDataToSend(cast(byte[])[0x80]);
+    this.transportClient_.addDataToSend([cast(byte)0x80]);
     this.transportClient_.addDataToSend(lengthToBytes(data.length));
     this.transportClient_.addDataToSend(data);      
   }
@@ -65,10 +65,9 @@ class SimpleSession(TransportClient) {
     if (this.lastReceivedDataCollection_.length) {
       this.lastReceivedDataCollection_ = this.lastReceivedDataCollection_[1..$];
     }
-  Loop:
     for (;;) {
       if (!this.bufferedData_.length) {
-        break Loop;
+        return true;
       }
       assert(0 < this.bufferedData_.length);
       final switch (this.receivingState_) {
@@ -108,7 +107,7 @@ class SimpleSession(TransportClient) {
         assert(0 < this.bufferedData_.length);
         assert(0 < this.restLengthToRead_);
         if (this.bufferedData_.length < this.restLengthToRead_) {
-          break Loop;
+          return true;
         }
         this.lastReceivedDataCollection_ ~= this.bufferedData_[0..this.restLengthToRead_];
         this.bufferedData_ = this.bufferedData_[this.restLengthToRead_..$];
@@ -124,7 +123,6 @@ class SimpleSession(TransportClient) {
         }
       }
     }
-    return true;
   }
 
   public bool send() {
@@ -142,9 +140,9 @@ class SimpleSession(TransportClient) {
 
 unittest {
   class MockTransportClient {
-    private byte[] dataToSend_;
-    public byte[] sentData_;
-    public byte[][] receivedDataCollection_ = [[]];
+    private immutable(byte)[] dataToSend_;
+    public immutable(byte)[] sentData_;
+    public immutable(byte)[][] receivedDataCollection_ = [[]];
     public bool isClosed_;
     public void addDataToSend(in byte[] data) {
       this.dataToSend_ ~= data;
@@ -173,7 +171,7 @@ unittest {
       if (this.isClosed_) {
         return false;
       }
-      this.sentData_ = this.dataToSend_.dup;
+      this.sentData_ = this.dataToSend_;
       return true;
     }
   }
@@ -186,79 +184,79 @@ unittest {
   {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
-    session.addDataToSend(cast(byte[])[]);
+    session.addDataToSend([]);
     assert(session.send());
-    assert(cast(byte[])[] == transportClient.sentData_);
+    assert([] == transportClient.sentData_);
   }
   {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
     byte[] data;
     data.length = 127;
-    data[0..$] = cast(byte)'a';
+    data[0..$] = 'a';
     session.addDataToSend(data);
     assert(session.send());
-    assert(cast(byte[])[0x80, 0x7f] ~ data == transportClient.sentData_);
+    assert(cast(immutable(byte)[])[0x80, 0x7f] ~ data == transportClient.sentData_);
   }
   {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
     byte[] data;
     data.length = 128;
-    data[0..$] = cast(byte)'a';
+    data[0..$] = 'a';
     session.addDataToSend(data);
     assert(session.send());
-    assert(cast(byte[])[0x80, 0x81, 0x00] ~ data == transportClient.sentData_);
+    assert(cast(immutable(byte)[])[0x80, 0x81, 0x00] ~ data == transportClient.sentData_);
   }
   {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
     byte[] data;
     data.length = 129;
-    data[0..$] = cast(byte)'a';
+    data[0..$] = 'a';
     session.addDataToSend(data);
     assert(session.send());
-    assert(cast(byte[])[0x80, 0x81, 0x01] ~ data == transportClient.sentData_);
+    assert(cast(immutable(byte)[])[0x80, 0x81, 0x01] ~ data == transportClient.sentData_);
   }
   {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
     byte[] data;
     data.length = 200;
-    data[0..$] = cast(byte)'a';
+    data[0..$] = 'a';
     session.addDataToSend(data);
     assert(session.send());
-    assert(cast(byte[])[0x80, 0x81, 0x48] ~ data == transportClient.sentData_);
+    assert(cast(immutable(byte)[])[0x80, 0x81, 0x48] ~ data == transportClient.sentData_);
   }
   {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
     byte[] data;
     data.length = 314159;
-    data[0..$] = cast(byte)'a';
+    data[0..$] = 'a';
     session.addDataToSend(data);
     assert(session.send());
-    assert(cast(byte[])[0x80, 0x93, 0x96, 0x2f] ~ data == transportClient.sentData_);
+    assert(cast(immutable(byte)[])[0x80, 0x93, 0x96, 0x2f] ~ data == transportClient.sentData_);
   }
   // send continuously
   {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
-    session.addDataToSend(cast(byte[])"foo");
-    session.addDataToSend(cast(byte[])"barbaz");
+    session.addDataToSend(cast(immutable(byte)[])"foo");
+    session.addDataToSend(cast(immutable(byte)[])"barbaz");
     assert(session.send());
-    assert(cast(byte[])[0x80, 0x03, 'f', 'o', 'o', 0x80, 0x06, 'b', 'a', 'r', 'b', 'a', 'z'] ==
+    assert(cast(immutable(byte)[])[0x80, 0x03, 'f', 'o', 'o', 0x80, 0x06, 'b', 'a', 'r', 'b', 'a', 'z'] ==
            transportClient.sentData_);
   }
   // receive
   {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
-    immutable header = cast(byte[])[0x80, 0x7f];
+    immutable header = cast(immutable(byte)[])[0x80, 0x7f];
     byte[] data;
     data.length = 127;
-    data[0..$] = cast(byte)'a';
-    transportClient.receivedDataCollection_ ~= header ~ data;
+    data[0..$] = 'a';
+    transportClient.receivedDataCollection_ ~= cast(immutable(byte)[])(header ~ data);
     assert(session.receive());
     assert(data == session.lastReceivedData);
     assert(header ~ data == transportClient.lastReceivedData);
@@ -267,11 +265,11 @@ unittest {
   {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
-    immutable header = cast(byte[])[0x80, 0x81, 0x00];
+    immutable header = cast(immutable(byte)[])[0x80, 0x81, 0x00];
     byte[] data;
     data.length = 128;
-    data[0..$] = cast(byte)'a';
-    transportClient.receivedDataCollection_ ~= header ~ data;
+    data[0..$] = 'a';
+    transportClient.receivedDataCollection_ ~= cast(immutable(byte)[])(header ~ data);
     assert(session.receive());
     assert(data == session.lastReceivedData);
     assert(header ~ data == transportClient.lastReceivedData);
@@ -280,11 +278,11 @@ unittest {
   {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
-    immutable header = cast(byte[])[0x80, 0x81, 0x01];
+    immutable header = cast(immutable(byte)[])[0x80, 0x81, 0x01];
     byte[] data;
     data.length = 129;
-    data[0..$] = cast(byte)'a';
-    transportClient.receivedDataCollection_ ~= header ~ data;
+    data[0..$] = 'a';
+    transportClient.receivedDataCollection_ ~= cast(immutable(byte)[])(header ~ data);
     assert(session.receive());
     assert(data == session.lastReceivedData);
     assert(header ~ data == transportClient.lastReceivedData);
@@ -293,11 +291,11 @@ unittest {
   {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
-    immutable header = cast(byte[])[0x80, 0x81, 0x48];
+    immutable header = cast(immutable(byte)[])[0x80, 0x81, 0x48];
     byte[] data;
     data.length = 200;
-    data[0..$] = cast(byte)'a';
-    transportClient.receivedDataCollection_ ~= header ~ data;
+    data[0..$] = 'a';
+    transportClient.receivedDataCollection_ ~= cast(immutable(byte)[])(header ~ data);
     assert(session.receive());
     assert(data == session.lastReceivedData);
     assert(header ~ data == transportClient.lastReceivedData);
@@ -306,11 +304,11 @@ unittest {
   {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
-    immutable header = cast(byte[])[0x80, 0x93, 0x96, 0x2f];
+    immutable header = cast(immutable(byte)[])[0x80, 0x93, 0x96, 0x2f];
     byte[] data;
     data.length = 314159;
-    data[0..$] = cast(byte)'a';
-    transportClient.receivedDataCollection_ ~= header ~ data;
+    data[0..$] = 'a';
+    transportClient.receivedDataCollection_ ~= cast(immutable(byte)[])(header ~ data);
     assert(session.receive());
     assert(data == session.lastReceivedData);
     assert(header ~ data == transportClient.lastReceivedData);
@@ -321,11 +319,11 @@ unittest {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
     transportClient.receivedDataCollection_ ~=
-      cast(byte[])[0x80, 0x03, 'f', 'o', 'o', 0x80, 0x06, 'b', 'a', 'r', 'b', 'a', 'z'];
+      cast(immutable(byte)[])[0x80, 0x03, 'f', 'o', 'o', 0x80, 0x06, 'b', 'a', 'r', 'b', 'a', 'z'];
     assert(session.receive());
-    assert(cast(byte[])"foo" == session.lastReceivedData);
+    assert("foo" == session.lastReceivedData);
     assert(session.receive());
-    assert(cast(byte[])"barbaz" == session.lastReceivedData);
+    assert("barbaz" == session.lastReceivedData);
     assert(session.receive());
     assert([] == session.lastReceivedData);
     assert(!transportClient.isClosed_);
@@ -334,20 +332,20 @@ unittest {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
     transportClient.receivedDataCollection_ ~=
-      [cast(byte[])[0x80, 0x03, 'f'],
+      [cast(immutable(byte)[])[0x80, 0x03, 'f'],
        [],
-       cast(byte[])['o', 'o', 0x80],
+       cast(immutable(byte)[])['o', 'o', 0x80],
        [],
        [],
-       cast(byte[])[0x06, 'b', 'a', 'r', 'b', 'a', 'z']];
+       cast(immutable(byte)[])[0x06, 'b', 'a', 'r', 'b', 'a', 'z']];
     do {
       assert(session.receive());
     } while (!session.lastReceivedData.length);
-    assert(cast(byte[])"foo" == session.lastReceivedData);
+    assert("foo" == session.lastReceivedData);
     do {
       assert(session.receive());
     } while (!session.lastReceivedData.length);
-    assert(cast(byte[])"barbaz" == session.lastReceivedData);
+    assert("barbaz" == session.lastReceivedData);
     assert(session.receive());
     assert([] == session.lastReceivedData);
     assert(!transportClient.isClosed_);
@@ -355,16 +353,16 @@ unittest {
   {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
-    auto header = cast(byte[])[0x80, 0x99, 0x80, 0x00];
+    auto header = cast(immutable(byte)[])[0x80, 0x99, 0x80, 0x00];
     byte[] data;
     data.length = 4096 * 100;
-    data[0..$] = cast(byte)'a';
+    data[0..$] = 'a';
     transportClient.receivedDataCollection_ ~= header;
     for (int i = 0; i < 100; i++) {
       byte[] dataPacket;
       dataPacket.length = 4096;
-      dataPacket[0..$] = cast(byte)'a';
-      transportClient.receivedDataCollection_ ~= dataPacket;
+      dataPacket[0..$] = 'a';
+      transportClient.receivedDataCollection_ ~= cast(immutable(byte)[])dataPacket;
     }
     do {
       assert(session.receive());
@@ -376,7 +374,7 @@ unittest {
   {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
-    transportClient.receivedDataCollection_ ~= cast(byte[])[0xff];
+    transportClient.receivedDataCollection_ ~= cast(immutable(byte)[])[0xff];
     assert(!session.receive());
     assert([] == session.lastReceivedData);
     assert(transportClient.isClosed_);
@@ -384,9 +382,9 @@ unittest {
   {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
-    transportClient.receivedDataCollection_ ~= cast(byte[])[0x80, 0x03, 'f', 'o', 'o', 0xff];
+    transportClient.receivedDataCollection_ ~= cast(immutable(byte)[])[0x80, 0x03, 'f', 'o', 'o', 0xff];
     assert(session.receive());
-    assert(cast(byte[])"foo" == session.lastReceivedData);
+    assert("foo" == session.lastReceivedData);
     assert(!session.receive());
     assert([] == session.lastReceivedData);
     assert(transportClient.isClosed_);
@@ -394,7 +392,7 @@ unittest {
   {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
-    transportClient.receivedDataCollection_ ~= cast(byte[])[0x80, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
+    transportClient.receivedDataCollection_ ~= cast(immutable(byte)[])[0x80, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
     assert(!session.receive());
     assert([] == session.lastReceivedData);
     assert(transportClient.isClosed_);
@@ -403,16 +401,16 @@ unittest {
     // empty data
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
-    transportClient.receivedDataCollection_ ~= cast(byte[])[0x80, 0x00, 0x80, 0x03, 'f', 'o', 'o'];
+    transportClient.receivedDataCollection_ ~= cast(immutable(byte)[])[0x80, 0x00, 0x80, 0x03, 'f', 'o', 'o'];
     assert(session.receive());
-    assert(cast(byte[])"foo" == session.lastReceivedData);
+    assert("foo" == session.lastReceivedData);
     assert(!transportClient.isClosed_);
   }
   {
     // empty data (redundant bytes)
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
-    transportClient.receivedDataCollection_ ~= cast(byte[])[0x80, 0x80, 0x80, 0x00, 0x80, 0x03, 'f', 'o', 'o'];
+    transportClient.receivedDataCollection_ ~= cast(immutable(byte)[])[0x80, 0x80, 0x80, 0x00, 0x80, 0x03, 'f', 'o', 'o'];
     assert(!session.receive());
     assert([] == session.lastReceivedData);
     assert(transportClient.isClosed_);
@@ -449,44 +447,44 @@ unittest {
   }
   {
     int readBytesNum;
-    immutable length = bytesToLength(cast(byte[])[0x03], readBytesNum);
+    immutable length = bytesToLength([0x03], readBytesNum);
     assert(3 == length);
     assert(1 == readBytesNum);
   }
   {
     int readBytesNum;
-    immutable length = bytesToLength(cast(byte[])[0x7f], readBytesNum);
+    immutable length = bytesToLength([0x7f], readBytesNum);
     assert(127 == length);
     assert(1 == readBytesNum);
   }
   {
     int readBytesNum;
-    immutable length = bytesToLength(cast(byte[])[0x81, 0x00], readBytesNum);
+    immutable length = bytesToLength(cast(immutable(byte)[])[0x81, 0x00], readBytesNum);
     assert(128 == length);
     assert(2 == readBytesNum);
   }
   {
     int readBytesNum;
-    immutable length = bytesToLength(cast(byte[])[0x81, 0x01], readBytesNum);
+    immutable length = bytesToLength(cast(immutable(byte)[])[0x81, 0x01], readBytesNum);
     assert(129 == length);
     assert(2 == readBytesNum);
   }
   {
     int readBytesNum;
-    immutable length = bytesToLength(cast(byte[])[0x81, 0x48], readBytesNum);
+    immutable length = bytesToLength(cast(immutable(byte)[])[0x81, 0x48], readBytesNum);
     assert(200 == length);
     assert(2 == readBytesNum);
   }
   {
     int readBytesNum;
-    immutable length = bytesToLength(cast(byte[])[0x93, 0x96, 0x2f], readBytesNum);
+    immutable length = bytesToLength(cast(immutable(byte)[])[0x93, 0x96, 0x2f], readBytesNum);
     assert(314159 == length);
     assert(3 == readBytesNum);
   }
   {
     try {
       int readBytesNum;
-      bytesToLength(cast(byte[])[0xff, 0xff, 0xff, 0xff, 0xff], readBytesNum);
+      bytesToLength(cast(immutable(byte)[])[0xff, 0xff, 0xff, 0xff, 0xff], readBytesNum);
       assert(0);
     } catch (Exception) {
     }
@@ -495,7 +493,7 @@ unittest {
     try {
       // redundant bytes
       int readBytesNum;
-      bytesToLength(cast(byte[])[0x80, 0x01], readBytesNum);
+      bytesToLength(cast(immutable(byte)[])[0x80, 0x01], readBytesNum);
       assert(0);
     } catch (Exception) {
     }
@@ -517,10 +515,10 @@ private const(byte[]) lengthToBytes(int length)  {
 import std.stdio;
  
 unittest {
-  assert(cast(byte[])[0x03] == lengthToBytes(3));
-  assert(cast(byte[])[0x7f] == lengthToBytes(127));
-  assert(cast(byte[])[0x81, 0x00] == cast(byte[])lengthToBytes(128));
-  assert(cast(byte[])[0x81, 0x01] == cast(byte[])lengthToBytes(129));
-  assert(cast(byte[])[0x81, 0x48] == cast(byte[])lengthToBytes(200));
-  assert(cast(byte[])[0x93, 0x96, 0x2f] == cast(byte[])lengthToBytes(314159));
+  assert(cast(immutable(byte)[])[0x03] == lengthToBytes(3));
+  assert(cast(immutable(byte)[])[0x7f] == lengthToBytes(127));
+  assert(cast(immutable(byte)[])[0x81, 0x00] == cast(immutable(byte)[])lengthToBytes(128));
+  assert(cast(immutable(byte)[])[0x81, 0x01] == cast(immutable(byte)[])lengthToBytes(129));
+  assert(cast(immutable(byte)[])[0x81, 0x48] == cast(immutable(byte)[])lengthToBytes(200));
+  assert(cast(immutable(byte)[])[0x93, 0x96, 0x2f] == cast(immutable(byte)[])lengthToBytes(314159));
 }
