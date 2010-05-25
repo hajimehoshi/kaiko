@@ -64,8 +64,6 @@ class SocketServer {
 
 }
 
-import std.stdio;
-
 unittest {
   auto server = new SocketServer();
   scope (exit) { server.close(); }
@@ -171,6 +169,8 @@ unittest {
   assert(!client.send());
 }
 
+import std.stdio;
+
 unittest {
   // send big data
   auto server = new SocketServer();
@@ -187,13 +187,15 @@ unittest {
 
   byte[] sentData;
   sentData.length = 16777216;
+  sentData[0..$] = cast(byte)'a';
   client.addDataToSend(sentData);
   assert(client.send());
   
   byte[] receivedData;
   do {
     assert(clientInServer.receive);
-    receivedData ~= clientInServer.lastReceivedData();
+    receivedData ~= clientInServer.lastReceivedData;
   } while (receivedData.length < sentData.length);
   assert(sentData.length == receivedData.length);
+  assert(sentData == receivedData);
 }

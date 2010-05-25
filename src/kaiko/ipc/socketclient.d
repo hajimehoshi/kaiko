@@ -60,7 +60,8 @@ class SocketClient {
     case Socket.ERROR:
       throw new SocketException("Socket recv error", .WSAGetLastError());
     default:
-      this.lastReceivedData_ = buffer[0..receivedLength];
+      assert(receivedLength <= buffer.length);
+      this.lastReceivedData_ = buffer[0..receivedLength].dup;
       return true;
     }
   }
