@@ -501,7 +501,7 @@ unittest {
 }
 
 private const(byte[]) lengthToBytes(int length)  {
-  byte[] bytes = [length & 0x7f];
+  immutable(byte)[] bytes = [length & 0x7f];
   for (;;) {
     length >>= 7;
     if (!length) {
