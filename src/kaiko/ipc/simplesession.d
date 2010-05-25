@@ -11,7 +11,6 @@ class SimpleSession(TransportClient) {
 
   private TransportClient transportClient_;
   private bool isActive_ = true;
-  private byte[][] dataCollectionToSend_;
   private byte[] lastReceivedData_;
   private ReceivingState receivingState_ = ReceivingState.Init;
   private int restLengthToRead_;
@@ -22,13 +21,19 @@ class SimpleSession(TransportClient) {
   }
  
   public void addDataToSend(in byte[] data) {
-    this.dataCollectionToSend_ ~= data.dup;
+    if (!data) {
+      // empty
+      // TODO: logging
+      return;
+    }
+    this.transportClient_.addDataToSend(cast(byte[])[0x80]);
+    this.transportClient_.addDataToSend(lengthToBytes(data.length));
+    this.transportClient_.addDataToSend(data);      
   }
 
   public void close() {
     this.transportClient_.close();
     this.isActive_ = false;
-    this.dataCollectionToSend_ = null;
     this.lastReceivedData_ = null;
     this.receivingState_ = ReceivingState.Terminated;
     this.restLengthToRead_ = 0;
@@ -54,18 +59,19 @@ class SimpleSession(TransportClient) {
         this.lastReceivedData_ = null;
         return true;
       }
+      assert(0 < this.bufferedData_.length);
       final switch (this.receivingState_) {
       case ReceivingState.Init:
-        assert(0 < this.bufferedData_.length);
         assert(!this.restLengthToRead_);
         if (this.bufferedData_[0] == cast(byte)0x80) {
+          this.bufferedData_ = this.bufferedData_[1..$].dup;
           this.receivingState_ = ReceivingState.Length;
         } else {
           goto Failed;
         }
         break;
       case ReceivingState.Length:
-        assert(0 < this.restLengthToRead_);
+        assert(!this.restLengthToRead_);
         {
           int length;
           int readBytesNum;
@@ -79,9 +85,10 @@ class SimpleSession(TransportClient) {
             return true;
           }
           assert(0 <= length);
+          assert(0 <= readBytesNum);
           assert(readBytesNum <= this.bufferedData_.length);
           this.restLengthToRead_ = length;
-          this.bufferedData_ = this.bufferedData_[readBytesNum..$];
+          this.bufferedData_ = this.bufferedData_[readBytesNum..$].dup;
           if (length) {
             this.receivingState_ = ReceivingState.Data;
           } else {
@@ -98,16 +105,15 @@ class SimpleSession(TransportClient) {
           this.lastReceivedData_ = null;
           return true;
         }
-        this.lastReceivedData_ = this.bufferedData_[0..this.restLengthToRead_];
-        this.bufferedData_ = this.bufferedData_[this.restLengthToRead_..$];
+        this.lastReceivedData_ = this.bufferedData_[0..this.restLengthToRead_].dup;
+        this.bufferedData_ = this.bufferedData_[this.restLengthToRead_..$].dup;
         this.receivingState_ = ReceivingState.Init;
         this.restLengthToRead_ = 0;
-        break;
+        return true;
       case ReceivingState.Terminated:
         assert(0);
       }
     }
-    return true;
   Failed:
     this.close();
     return false;
@@ -117,16 +123,6 @@ class SimpleSession(TransportClient) {
     if (!this.isActive_) {
       return false;
     }
-    foreach (data; this.dataCollectionToSend_) {
-      if (!data.length) {
-        continue;
-      }
-      const lengthPart = lengthToBytes(data.length);
-      this.transportClient_.addDataToSend(cast(byte[])[0x80]);
-      this.transportClient_.addDataToSend(lengthPart);
-      this.transportClient_.addDataToSend(data);
-    }
-    this.dataCollectionToSend_ = null;
     if (!this.transportClient_.send()) {
       this.close();
       return false;
@@ -138,23 +134,276 @@ class SimpleSession(TransportClient) {
 
 unittest {
   class MockTransportClient {
-    private byte[] lastReceivedData_;
+    private byte[] dataToSend_;
+    public byte[] sentData_;
+    public byte[][] receivedDataCollection_ = [[]];
+    public bool isClosed_;
     public void addDataToSend(in byte[] data) {
+      this.dataToSend_ ~= data;
     }
     public void close() {
+      this.isClosed_ = true;
     }
     @property
     public const(byte[]) lastReceivedData() {
-      return this.lastReceivedData_;
+      if (this.receivedDataCollection_) {
+        return this.receivedDataCollection_[0];
+      } else {
+        return null;
+      }
     }
     public bool receive() {
+      if (this.isClosed_) {
+        return false;
+      }
+      if (this.receivedDataCollection_) {
+        this.receivedDataCollection_ = this.receivedDataCollection_[1..$].dup;
+      }
       return true;
     }
-    public bool send() {  
+    public bool send() {
+      if (this.isClosed_) {
+        return false;
+      }
+      this.sentData_ = this.dataToSend_.dup;
       return true;
     }
   }
-  auto simpleSession = new SimpleSession!MockTransportClient(new MockTransportClient);
+  // send
+  {
+    auto transportClient = new MockTransportClient;
+    auto session = new SimpleSession!MockTransportClient(transportClient);
+    session.addDataToSend(cast(byte[])[]);
+    assert(session.send());
+    assert(cast(byte[])[] == transportClient.sentData_);
+  }
+  {
+    auto transportClient = new MockTransportClient;
+    auto session = new SimpleSession!MockTransportClient(transportClient);
+    byte[] data;
+    data.length = 127;
+    data[0..$] = cast(byte)'a';
+    session.addDataToSend(data);
+    assert(session.send());
+    assert(cast(byte[])[0x80, 0x7f] ~ data == transportClient.sentData_);
+  }
+  {
+    auto transportClient = new MockTransportClient;
+    auto session = new SimpleSession!MockTransportClient(transportClient);
+    byte[] data;
+    data.length = 128;
+    data[0..$] = cast(byte)'a';
+    session.addDataToSend(data);
+    assert(session.send());
+    assert(cast(byte[])[0x80, 0x81, 0x00] ~ data == transportClient.sentData_);
+  }
+  {
+    auto transportClient = new MockTransportClient;
+    auto session = new SimpleSession!MockTransportClient(transportClient);
+    byte[] data;
+    data.length = 129;
+    data[0..$] = cast(byte)'a';
+    session.addDataToSend(data);
+    assert(session.send());
+    assert(cast(byte[])[0x80, 0x81, 0x01] ~ data == transportClient.sentData_);
+  }
+  {
+    auto transportClient = new MockTransportClient;
+    auto session = new SimpleSession!MockTransportClient(transportClient);
+    byte[] data;
+    data.length = 200;
+    data[0..$] = cast(byte)'a';
+    session.addDataToSend(data);
+    assert(session.send());
+    assert(cast(byte[])[0x80, 0x81, 0x48] ~ data == transportClient.sentData_);
+  }
+  {
+    auto transportClient = new MockTransportClient;
+    auto session = new SimpleSession!MockTransportClient(transportClient);
+    byte[] data;
+    data.length = 314159;
+    data[0..$] = cast(byte)'a';
+    session.addDataToSend(data);
+    assert(session.send());
+    assert(cast(byte[])[0x80, 0x93, 0x96, 0x2f] ~ data == transportClient.sentData_);
+  }
+  // send continuously
+  {
+    auto transportClient = new MockTransportClient;
+    auto session = new SimpleSession!MockTransportClient(transportClient);
+    session.addDataToSend(cast(byte[])"foo");
+    session.addDataToSend(cast(byte[])"barbaz");
+    assert(session.send());
+    assert(cast(byte[])[0x80, 0x03, 'f', 'o', 'o', 0x80, 0x06, 'b', 'a', 'r', 'b', 'a', 'z'] ==
+           transportClient.sentData_);
+  }
+  // receive
+  {
+    auto transportClient = new MockTransportClient;
+    auto session = new SimpleSession!MockTransportClient(transportClient);
+    immutable header = cast(byte[])[0x80, 0x7f];
+    byte[] data;
+    data.length = 127;
+    data[0..$] = cast(byte)'a';
+    transportClient.receivedDataCollection_ ~= header ~ data;
+    assert(session.receive());
+    assert(data == session.lastReceivedData);
+    assert(header ~ data == transportClient.lastReceivedData);
+    assert(!transportClient.isClosed_);
+  }
+  {
+    auto transportClient = new MockTransportClient;
+    auto session = new SimpleSession!MockTransportClient(transportClient);
+    immutable header = cast(byte[])[0x80, 0x81, 0x00];
+    byte[] data;
+    data.length = 128;
+    data[0..$] = cast(byte)'a';
+    transportClient.receivedDataCollection_ ~= header ~ data;
+    assert(session.receive());
+    assert(data == session.lastReceivedData);
+    assert(header ~ data == transportClient.lastReceivedData);
+    assert(!transportClient.isClosed_);
+  }
+  {
+    auto transportClient = new MockTransportClient;
+    auto session = new SimpleSession!MockTransportClient(transportClient);
+    immutable header = cast(byte[])[0x80, 0x81, 0x01];
+    byte[] data;
+    data.length = 129;
+    data[0..$] = cast(byte)'a';
+    transportClient.receivedDataCollection_ ~= header ~ data;
+    assert(session.receive());
+    assert(data == session.lastReceivedData);
+    assert(header ~ data == transportClient.lastReceivedData);
+    assert(!transportClient.isClosed_);
+  }
+  {
+    auto transportClient = new MockTransportClient;
+    auto session = new SimpleSession!MockTransportClient(transportClient);
+    immutable header = cast(byte[])[0x80, 0x81, 0x48];
+    byte[] data;
+    data.length = 200;
+    data[0..$] = cast(byte)'a';
+    transportClient.receivedDataCollection_ ~= header ~ data;
+    assert(session.receive());
+    assert(data == session.lastReceivedData);
+    assert(header ~ data == transportClient.lastReceivedData);
+    assert(!transportClient.isClosed_);
+  }
+  {
+    auto transportClient = new MockTransportClient;
+    auto session = new SimpleSession!MockTransportClient(transportClient);
+    immutable header = cast(byte[])[0x80, 0x93, 0x96, 0x2f];
+    byte[] data;
+    data.length = 314159;
+    data[0..$] = cast(byte)'a';
+    transportClient.receivedDataCollection_ ~= header ~ data;
+    assert(session.receive());
+    assert(data == session.lastReceivedData);
+    assert(header ~ data == transportClient.lastReceivedData);
+    assert(!transportClient.isClosed_);
+  }
+  // receive continuously
+  {
+    auto transportClient = new MockTransportClient;
+    auto session = new SimpleSession!MockTransportClient(transportClient);
+    transportClient.receivedDataCollection_ ~=
+      cast(byte[])[0x80, 0x03, 'f', 'o', 'o', 0x80, 0x06, 'b', 'a', 'r', 'b', 'a', 'z'];
+    assert(session.receive());
+    assert(cast(byte[])"foo" == session.lastReceivedData);
+    assert(session.receive());
+    assert(cast(byte[])"barbaz" == session.lastReceivedData);
+    assert(session.receive());
+    assert([] == session.lastReceivedData);
+    assert(!transportClient.isClosed_);
+  }
+  {
+    auto transportClient = new MockTransportClient;
+    auto session = new SimpleSession!MockTransportClient(transportClient);
+    transportClient.receivedDataCollection_ ~=
+      [cast(byte[])[0x80, 0x03, 'f'],
+       [],
+       cast(byte[])['o', 'o', 0x80],
+       [],
+       [],
+       cast(byte[])[0x06, 'b', 'a', 'r', 'b', 'a', 'z']];
+    do {
+      assert(session.receive());
+    } while (!session.lastReceivedData.length);
+    assert(cast(byte[])"foo" == session.lastReceivedData);
+    do {
+      assert(session.receive());
+    } while (!session.lastReceivedData.length);
+    assert(cast(byte[])"barbaz" == session.lastReceivedData);
+    assert(session.receive());
+    assert([] == session.lastReceivedData);
+    assert(!transportClient.isClosed_);
+  }
+  {
+    auto transportClient = new MockTransportClient;
+    auto session = new SimpleSession!MockTransportClient(transportClient);
+    auto header = cast(byte[])[0x80, 0x99, 0x80, 0x00];
+    byte[] data;
+    data.length = 4096 * 100;
+    data[0..$] = cast(byte)'a';
+    transportClient.receivedDataCollection_ ~= header;
+    for (int i = 0; i < 100; i++) {
+      byte[] dataPacket;
+      dataPacket.length = 4096;
+      dataPacket[0..$] = cast(byte)'a';
+      transportClient.receivedDataCollection_ ~= dataPacket;
+    }
+    do {
+      assert(session.receive());
+    } while (!session.lastReceivedData.length);
+    assert(data == session.lastReceivedData);
+    assert(!transportClient.isClosed_);
+  }
+  // receive invalid bytes
+  {
+    auto transportClient = new MockTransportClient;
+    auto session = new SimpleSession!MockTransportClient(transportClient);
+    transportClient.receivedDataCollection_ ~= cast(byte[])[0xff];
+    assert(!session.receive());
+    assert([] == session.lastReceivedData);
+    assert(transportClient.isClosed_);
+  }
+  {
+    auto transportClient = new MockTransportClient;
+    auto session = new SimpleSession!MockTransportClient(transportClient);
+    transportClient.receivedDataCollection_ ~= cast(byte[])[0x80, 0x03, 'f', 'o', 'o', 0xff];
+    assert(session.receive());
+    assert(cast(byte[])"foo" == session.lastReceivedData);
+    assert(!session.receive());
+    assert([] == session.lastReceivedData);
+    assert(transportClient.isClosed_);
+  }
+  {
+    auto transportClient = new MockTransportClient;
+    auto session = new SimpleSession!MockTransportClient(transportClient);
+    transportClient.receivedDataCollection_ ~= cast(byte[])[0x80, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
+    assert(!session.receive());
+    assert([] == session.lastReceivedData);
+    assert(transportClient.isClosed_);
+  }
+  {
+    // empty data
+    auto transportClient = new MockTransportClient;
+    auto session = new SimpleSession!MockTransportClient(transportClient);
+    transportClient.receivedDataCollection_ ~= cast(byte[])[0x80, 0x00, 0x80, 0x03, 'f', 'o', 'o'];
+    assert(session.receive());
+    assert(cast(byte[])"foo" == session.lastReceivedData);
+    assert(!transportClient.isClosed_);
+  }
+  {
+    // empty data (redundant bytes)
+    auto transportClient = new MockTransportClient;
+    auto session = new SimpleSession!MockTransportClient(transportClient);
+    transportClient.receivedDataCollection_ ~= cast(byte[])[0x80, 0x80, 0x80, 0x00, 0x80, 0x03, 'f', 'o', 'o'];
+    assert(!session.receive());
+    assert([] == session.lastReceivedData);
+    assert(transportClient.isClosed_);
+  }
 }
 
 private int bytesToLength(in byte[] bytes, out int readBytesNum) {

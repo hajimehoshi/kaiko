@@ -196,6 +196,5 @@ unittest {
     assert(clientInServer.receive);
     receivedData ~= clientInServer.lastReceivedData;
   } while (receivedData.length < sentData.length);
-  assert(sentData.length == receivedData.length);
   assert(sentData == receivedData);
 }

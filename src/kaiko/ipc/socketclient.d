@@ -34,7 +34,7 @@ class SocketClient {
 
   @property
   public const(byte[]) lastReceivedData() {
-    return this.lastReceivedData_;
+    return this.lastReceivedData_.dup;
   }
 
   public bool receive() {
@@ -90,7 +90,7 @@ class SocketClient {
       throw new SocketException("Socket send error", .WSAGetLastError());
     default:
       assert(sentLength <= this.dataToSend_.length);
-      this.dataToSend_ = this.dataToSend_[sentLength..$];
+      this.dataToSend_ = this.dataToSend_[sentLength..$].dup;
       return true;
     }
   }
