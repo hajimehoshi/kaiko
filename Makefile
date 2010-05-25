@@ -1,7 +1,7 @@
 DMD = dmd
 
 DFLAGS         = -Isrc -version=Unicode -version=WindowsVista -op -w
-DFLAGS_DEBUG   = -debug -g -unittest
+DFLAGS_DEBUG   = -debug -g -gc -unittest
 DFLAGS_RELEASE = -release -inline -O -L/exet:nt/su:windows:4.0
 
 PROGRAM = kaiko.exe
