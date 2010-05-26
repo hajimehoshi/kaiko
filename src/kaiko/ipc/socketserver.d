@@ -85,8 +85,7 @@ unittest {
     }
   }
 
-  SocketClient[] clientsInServer;
-  clientsInServer.length = clients.length;
+  auto clientsInServer = new SocketClient[clients.length];
   do {
     assert(server.accept());
     clientsInServer[0] = server.lastAcceptedClient;
@@ -190,8 +189,7 @@ unittest {
     clientInServer = server.lastAcceptedClient;
   } while (!clientInServer);
 
-  byte[] sentData;
-  sentData.length = 16777216;
+  auto sentData = new byte[16777216];
   sentData[0..$] = 'a';
   client.addDataToSend(sentData);
   assert(client.send());

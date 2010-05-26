@@ -191,8 +191,7 @@ unittest {
   {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
-    byte[] data;
-    data.length = 127;
+    auto data = new byte[127];
     data[0..$] = 'a';
     session.addDataToSend(data);
     assert(session.send());
@@ -201,8 +200,7 @@ unittest {
   {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
-    byte[] data;
-    data.length = 128;
+    auto data = new byte[128];
     data[0..$] = 'a';
     session.addDataToSend(data);
     assert(session.send());
@@ -211,8 +209,7 @@ unittest {
   {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
-    byte[] data;
-    data.length = 129;
+    auto data = new byte[129];
     data[0..$] = 'a';
     session.addDataToSend(data);
     assert(session.send());
@@ -221,8 +218,7 @@ unittest {
   {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
-    byte[] data;
-    data.length = 200;
+    auto data = new byte[200];
     data[0..$] = 'a';
     session.addDataToSend(data);
     assert(session.send());
@@ -231,8 +227,7 @@ unittest {
   {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
-    byte[] data;
-    data.length = 314159;
+    auto data = new byte[314159];
     data[0..$] = 'a';
     session.addDataToSend(data);
     assert(session.send());
@@ -253,8 +248,7 @@ unittest {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
     immutable header = cast(immutable(byte)[])[0x80, 0x7f];
-    byte[] data;
-    data.length = 127;
+    auto data = new byte[127];
     data[0..$] = 'a';
     transportClient.receivedDataCollection_ ~= cast(immutable(byte)[])(header ~ data);
     assert(session.receive());
@@ -266,8 +260,7 @@ unittest {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
     immutable header = cast(immutable(byte)[])[0x80, 0x81, 0x00];
-    byte[] data;
-    data.length = 128;
+    auto data = new byte[128];
     data[0..$] = 'a';
     transportClient.receivedDataCollection_ ~= cast(immutable(byte)[])(header ~ data);
     assert(session.receive());
@@ -279,8 +272,7 @@ unittest {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
     immutable header = cast(immutable(byte)[])[0x80, 0x81, 0x01];
-    byte[] data;
-    data.length = 129;
+    auto data = new byte[129];
     data[0..$] = 'a';
     transportClient.receivedDataCollection_ ~= cast(immutable(byte)[])(header ~ data);
     assert(session.receive());
@@ -292,8 +284,7 @@ unittest {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
     immutable header = cast(immutable(byte)[])[0x80, 0x81, 0x48];
-    byte[] data;
-    data.length = 200;
+    auto data = new byte[200];
     data[0..$] = 'a';
     transportClient.receivedDataCollection_ ~= cast(immutable(byte)[])(header ~ data);
     assert(session.receive());
@@ -305,8 +296,7 @@ unittest {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
     immutable header = cast(immutable(byte)[])[0x80, 0x93, 0x96, 0x2f];
-    byte[] data;
-    data.length = 314159;
+    auto data = new byte[314159];
     data[0..$] = 'a';
     transportClient.receivedDataCollection_ ~= cast(immutable(byte)[])(header ~ data);
     assert(session.receive());
@@ -354,13 +344,11 @@ unittest {
     auto transportClient = new MockTransportClient;
     auto session = new SimpleSession!MockTransportClient(transportClient);
     auto header = cast(immutable(byte)[])[0x80, 0x99, 0x80, 0x00];
-    byte[] data;
-    data.length = 4096 * 100;
+    auto data = new byte[4096 * 100];
     data[0..$] = 'a';
     transportClient.receivedDataCollection_ ~= header;
     for (int i = 0; i < 100; i++) {
-      byte[] dataPacket;
-      dataPacket.length = 4096;
+      auto dataPacket = new byte[4096];
       dataPacket[0..$] = 'a';
       transportClient.receivedDataCollection_ ~= cast(immutable(byte)[])dataPacket;
     }

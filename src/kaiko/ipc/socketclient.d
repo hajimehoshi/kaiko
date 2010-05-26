@@ -50,7 +50,7 @@ class SocketClient {
     default:
       break;
     }
-    byte[4096] buffer;
+    byte[] buffer = new byte[4096];
     immutable receivedLength = this.socket_.receive(buffer);
     switch (receivedLength) {
     case 0:
@@ -60,7 +60,7 @@ class SocketClient {
       throw new SocketException("Socket recv error", .WSAGetLastError());
     default:
       assert(receivedLength <= buffer.length);
-      this.lastReceivedData_ = buffer[0..receivedLength].dup; // why?
+      this.lastReceivedData_ = buffer[0..receivedLength];
       return true;
     }
   }
