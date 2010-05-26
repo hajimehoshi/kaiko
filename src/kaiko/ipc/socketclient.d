@@ -6,8 +6,8 @@ import std.socket;
 class SocketClient {
 
   private Socket socket_;
-  private const(byte)[] lastReceivedData_;
-  private const(byte)[] dataToSend_;
+  private const(ubyte)[] lastReceivedData_;
+  private const(ubyte)[] dataToSend_;
 
   public this(in string ip, in ushort port) {
     this.socket_ = new Socket(AddressFamily.INET, SocketType.STREAM, ProtocolType.TCP);
@@ -19,7 +19,7 @@ class SocketClient {
     this.socket_ = socket;
   }
 
-  public void addDataToSend(in byte[] data) {
+  public void addDataToSend(in ubyte[] data) {
     this.dataToSend_ ~= data;
   }
 
@@ -32,7 +32,7 @@ class SocketClient {
   }
 
   @property
-  public const(byte[]) lastReceivedData() {
+  public const(ubyte[]) lastReceivedData() {
     return this.lastReceivedData_;
   }
 
@@ -50,7 +50,7 @@ class SocketClient {
     default:
       break;
     }
-    auto buffer = new byte[4096];
+    auto buffer = new ubyte[4096];
     immutable receivedLength = this.socket_.receive(buffer);
     switch (receivedLength) {
     case 0:

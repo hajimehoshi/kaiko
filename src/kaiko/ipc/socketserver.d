@@ -113,12 +113,12 @@ unittest {
   assert(clients[2].socket.remoteAddress.toString() == clientsInServer[2].socket.localAddress.toString());
   assert(clients[2].socket.localAddress.toString() == clientsInServer[2].socket.remoteAddress.toString());
 
-  clients[0].addDataToSend(cast(immutable(byte)[])"foo");
-  clients[0].addDataToSend(cast(immutable(byte)[])"bar");
-  clients[0].addDataToSend(cast(immutable(byte)[])"baz");
+  clients[0].addDataToSend(['f', 'o', 'o']);
+  clients[0].addDataToSend(['b', 'a', 'r']);
+  clients[0].addDataToSend(['b', 'a', 'z']);
   assert(clients[0].send());
   {
-    immutable(byte)[] receivedData;
+    immutable(ubyte)[] receivedData;
     do {
       assert(clientsInServer[0].receive());
       receivedData ~= clientsInServer[0].lastReceivedData;
@@ -133,12 +133,12 @@ unittest {
   assert(clientsInServer[0].receive());
   assert([] == clientsInServer[0].lastReceivedData);
 
-  clientsInServer[1].addDataToSend(cast(immutable(byte)[])"FOO");
-  clientsInServer[1].addDataToSend(cast(immutable(byte)[])"BAR");
-  clientsInServer[1].addDataToSend(cast(immutable(byte)[])"BAZ");
+  clientsInServer[1].addDataToSend(['F', 'O', 'O']);
+  clientsInServer[1].addDataToSend(['B', 'A', 'R']);
+  clientsInServer[1].addDataToSend(['B', 'A', 'Z']);
   assert(clientsInServer[1].send());
   {
-    immutable(byte)[] receivedData;
+    immutable(ubyte)[] receivedData;
     do {
       assert(clients[1].receive());
       receivedData ~= clients[1].lastReceivedData;
@@ -189,12 +189,12 @@ unittest {
     clientInServer = server.lastAcceptedClient;
   } while (!clientInServer);
 
-  auto sentData = new byte[16777216];
+  auto sentData = new ubyte[16777216];
   sentData[0..$] = 'a';
   client.addDataToSend(sentData);
   assert(client.send());
   
-  immutable(byte)[] receivedData;
+  immutable(ubyte)[] receivedData;
   do {
     assert(clientInServer.receive);
     receivedData ~= clientInServer.lastReceivedData;
