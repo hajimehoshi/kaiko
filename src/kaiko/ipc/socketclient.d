@@ -32,7 +32,7 @@ class SocketClient {
   }
 
   @property
-  public const(ubyte[]) lastReceivedData() {
+  public const(ubyte)[] lastReceivedData() {
     return this.lastReceivedData_;
   }
 
