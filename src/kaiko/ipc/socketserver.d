@@ -53,17 +53,12 @@ class SocketServer {
   }
 
   @property
-  public ushort port() const {
+  public ushort port() {
     return this.port_;
   }
 
   @property
   package Socket socket() {
-    return this.socket_;
-  }
-
-  @property
-  package const(Socket) socket() const {
     return this.socket_;
   }
 

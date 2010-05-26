@@ -41,7 +41,7 @@ class SimpleSession(TransportClient) {
   }
 
   @property
-  public const(ubyte)[] lastReceivedData() {
+  public immutable(ubyte)[] lastReceivedData() {
     if (this.lastReceivedDataCollection_.length) {
       return this.lastReceivedDataCollection_[0];
     } else {
@@ -151,7 +151,7 @@ unittest {
       this.isClosed_ = true;
     }
     @property
-    public const(ubyte)[] lastReceivedData() {
+    public immutable(ubyte)[] lastReceivedData() {
       if (this.receivedDataCollection_.length) {
         return this.receivedDataCollection_[0];
       } else {
@@ -493,7 +493,7 @@ unittest {
   }
 }
 
-private const(ubyte)[] lengthToBytes(int length)  {
+private immutable(ubyte)[] lengthToBytes(int length)  {
   immutable(ubyte)[] bytes = [length & 0x7f];
   for (;;) {
     length >>= 7;
