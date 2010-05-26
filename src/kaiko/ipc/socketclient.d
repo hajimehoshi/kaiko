@@ -50,7 +50,7 @@ class SocketClient {
     default:
       break;
     }
-    byte[] buffer = new byte[4096];
+    auto buffer = new byte[4096];
     immutable receivedLength = this.socket_.receive(buffer);
     switch (receivedLength) {
     case 0:
