@@ -3,7 +3,7 @@ module kaiko.ipc.socketserver;
 import std.socket;
 import kaiko.ipc.socketclient;
 
-class SocketServer {
+final class SocketServer {
 
   private Socket socket_;
   private ushort port_;

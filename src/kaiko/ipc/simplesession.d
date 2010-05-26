@@ -1,9 +1,9 @@
 module kaiko.ipc.simplesession;
 
-class SimpleSession(TransportClient) {
+final class SimpleSession(TransportClient) {
 
   private enum ReceivingState {
-    Init,
+    Initial,
     Length,
     Data,
     Terminated,
@@ -12,8 +12,8 @@ class SimpleSession(TransportClient) {
   private TransportClient transportClient_;
   private bool isActive_ = true;
   private immutable(ubyte)[][] lastReceivedDataCollection_;
-  private ReceivingState receivingState_ = ReceivingState.Init;
-  private int restLengthToRead_;
+  private ReceivingState receivingState_ = ReceivingState.Initial;
+  private int nextDataLength_;
   private immutable(ubyte)[] bufferedData_;
 
   public this(TransportClient transportClient) {
@@ -36,7 +36,7 @@ class SimpleSession(TransportClient) {
     this.isActive_ = false;
     this.lastReceivedDataCollection_ = null;
     this.receivingState_ = ReceivingState.Terminated;
-    this.restLengthToRead_ = 0;
+    this.nextDataLength_ = 0;
     this.bufferedData_ = null;
   }
 
@@ -66,13 +66,13 @@ class SimpleSession(TransportClient) {
       this.lastReceivedDataCollection_ = this.lastReceivedDataCollection_[1..$];
     }
     for (;;) {
-      if (!this.bufferedData_.length) {
-        return true;
-      }
-      assert(0 < this.bufferedData_.length);
       final switch (this.receivingState_) {
-      case ReceivingState.Init:
-        assert(!this.restLengthToRead_);
+      case ReceivingState.Initial:
+        if (!this.bufferedData_.length) {
+          return true;
+        }
+        assert(0 < this.bufferedData_.length);
+        assert(!this.nextDataLength_);
         if (this.bufferedData_[0] == 0x80) {
           this.bufferedData_ = this.bufferedData_[1..$];
           this.receivingState_ = ReceivingState.Length;
@@ -81,7 +81,11 @@ class SimpleSession(TransportClient) {
         }
         break;
       case ReceivingState.Length:
-        assert(!this.restLengthToRead_);
+        if (!this.bufferedData_.length) {
+          return true;
+        }
+        assert(0 < this.bufferedData_.length);
+        assert(!this.nextDataLength_);
         int length, readBytesNum;
         try {
           length = bytesToLength(this.bufferedData_, readBytesNum);
@@ -93,26 +97,31 @@ class SimpleSession(TransportClient) {
         assert(0 <= length);
         assert(0 <= readBytesNum);
         assert(readBytesNum <= this.bufferedData_.length);
-        this.bufferedData_ = this.bufferedData_[readBytesNum..$];
-        if (length) {
-          this.restLengthToRead_ = length;
-          this.receivingState_ = ReceivingState.Data;
-        } else {
-          // empty size
-          // TODO: logging
-          this.receivingState_ = ReceivingState.Init;
+        if (readBytesNum) {
+          this.bufferedData_ = this.bufferedData_[readBytesNum..$];
+          if (length) {
+            this.nextDataLength_ = length;
+            this.receivingState_ = ReceivingState.Data;
+          } else {
+            // empty size
+            // TODO: logging
+            this.receivingState_ = ReceivingState.Initial;
+          }
         }
         break;
       case ReceivingState.Data:
-        assert(0 < this.bufferedData_.length);
-        assert(0 < this.restLengthToRead_);
-        if (this.bufferedData_.length < this.restLengthToRead_) {
+        if (!this.bufferedData_.length) {
           return true;
         }
-        this.lastReceivedDataCollection_ ~= this.bufferedData_[0..this.restLengthToRead_];
-        this.bufferedData_ = this.bufferedData_[this.restLengthToRead_..$];
-        this.receivingState_ = ReceivingState.Init;
-        this.restLengthToRead_ = 0;
+        assert(0 < this.bufferedData_.length);
+        assert(0 < this.nextDataLength_);
+        if (this.bufferedData_.length < this.nextDataLength_) {
+          return true;
+        }
+        this.lastReceivedDataCollection_ ~= this.bufferedData_[0..this.nextDataLength_];
+        this.bufferedData_ = this.bufferedData_[this.nextDataLength_..$];
+        this.receivingState_ = ReceivingState.Initial;
+        this.nextDataLength_ = 0;
         break;
       case ReceivingState.Terminated:
         if (this.lastReceivedDataCollection_.length) {
@@ -179,6 +188,8 @@ unittest {
     auto transportClient = new MockTransportClient;
     transportClient.receivedDataCollection_ ~= [1, 2, 3];
     assert([] == transportClient.lastReceivedData);
+    assert(transportClient.receive());
+    assert([1, 2, 3] == transportClient.lastReceivedData);
   }
   // send
   {
@@ -332,7 +343,10 @@ unittest {
        ['o', 'o', 0x80],
        [],
        [],
-       [0x06, 'b', 'a', 'r', 'b', 'a', 'z']];
+       [0x06, 'b', 'a', 'r', 'b', 'a', 'z'],
+       [],
+       [0x80, 0x03],
+       [cast(ubyte)'q', 'u', 'x']];
     do {
       assert(session.receive());
     } while (!session.lastReceivedData.length);
@@ -341,6 +355,10 @@ unittest {
       assert(session.receive());
     } while (!session.lastReceivedData.length);
     assert("barbaz" == session.lastReceivedData);
+    do {
+      assert(session.receive());
+    } while (!session.lastReceivedData.length);
+    assert("qux" == session.lastReceivedData);
     assert(session.receive());
     assert([] == session.lastReceivedData);
     assert(!transportClient.isClosed_);

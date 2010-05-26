@@ -3,7 +3,7 @@ module kaiko.ipc.socketclient;
 import std.c.windows.winsock;
 import std.socket;
 
-class SocketClient {
+final class SocketClient {
 
   private Socket socket_;
   private immutable(ubyte)[] lastReceivedData_;
