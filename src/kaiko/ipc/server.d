@@ -1,7 +1,7 @@
 module kaiko.ipc.server;
 
 template Client(TransportServer) {
-  alias typeof({return (new TransportServer()).lastAcceptedClient;}()) Client;
+  alias typeof({TransportServer t; return t.lastAcceptedClient;}()) Client;
 }
 
 final class Server(TransportServer, SessionProcessor) {
