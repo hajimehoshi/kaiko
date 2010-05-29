@@ -6,10 +6,11 @@ template Client(TransportServer) {
 
 final class Server(TransportServer, SessionProcessor) {
 
+  alias Client!TransportServer TransportClient;
   private TransportServer transportServer_;
   private SessionProcessor sessionProcessor_;
 
-  public void Process() {
+  public void process() {
     this.transportServer_.accept();
   }
 

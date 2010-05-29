@@ -370,7 +370,7 @@ unittest {
     auto data = new ubyte[4096 * 100];
     data[0..$] = 'a';
     transportClient.receivedDataCollection_ ~= header;
-    for (int i = 0; i < 100; i++) {
+    foreach (i; 0..100) {
       auto dataPacket = new ubyte[4096];
       dataPacket[0..$] = 'a';
       transportClient.receivedDataCollection_ ~= dataPacket.idup;
