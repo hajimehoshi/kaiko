@@ -1,6 +1,8 @@
 module kaiko.ipc.simplesession;
 
-final class SimpleSession(TransportClient) {
+final class SimpleSession(TransportClient_) {
+
+  alias TransportClient_ TransportClient;
 
   private enum ReceivingState {
     Initial,

@@ -5,11 +5,8 @@ import kaiko.ipc.simplesession;
 import kaiko.ipc.server;
 import kaiko.ipc.socketclient;
 import kaiko.ipc.socketserver;
-
-unittest {
-  static assert(is(SimpleSession!SocketClient));
-  static assert(is(Client!SocketServer == SocketClient));
-}
+import kaiko.storage.sessionprocessor;
 
 void main(string[] args) {
+  scope Server!(SessionProcessor!(SimpleSession!SocketClient)) server;
 }

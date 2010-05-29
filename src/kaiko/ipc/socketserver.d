@@ -5,6 +5,8 @@ import kaiko.ipc.socketclient;
 
 final class SocketServer {
 
+  alias SocketClient Client;
+
   private Socket socket_;
   private ushort port_;
   private SocketClient lastAcceptedClient_;
@@ -150,49 +152,48 @@ unittest {
 }
 
 unittest {
-  // send empty data
-  auto server = new SocketServer();
-  scope (exit) { server.close(); }
+  {
+    // send empty data
+    auto server = new SocketServer();
+    scope (exit) { server.close(); }
 
-  auto client = new SocketClient("127.0.0.1", server.port);
-  scope (exit) { server.close(); }
+    auto client = new SocketClient("127.0.0.1", server.port);
+    scope (exit) { server.close(); }
 
-  SocketClient clientInServer;
-  do {
-    assert(server.accept());
-    clientInServer = server.lastAcceptedClient;
-  } while (!clientInServer);
+    SocketClient clientInServer;
+    do {
+      assert(server.accept());
+      clientInServer = server.lastAcceptedClient;
+    } while (!clientInServer);
 
-  assert(client.send());
-  client.close();
-  assert(!client.send());
-}
+    assert(client.send());
+    client.close();
+    assert(!client.send());
+  }
+  {
+    // send big data
+    auto server = new SocketServer();
+    scope (exit) { server.close(); }
 
-import std.stdio;
+    auto client = new SocketClient("127.0.0.1", server.port);
+    scope (exit) { server.close(); }
 
-unittest {
-  // send big data
-  auto server = new SocketServer();
-  scope (exit) { server.close(); }
+    SocketClient clientInServer;
+    do {
+      assert(server.accept());
+      clientInServer = server.lastAcceptedClient;
+    } while (!clientInServer);
 
-  auto client = new SocketClient("127.0.0.1", server.port);
-  scope (exit) { server.close(); }
-
-  SocketClient clientInServer;
-  do {
-    assert(server.accept());
-    clientInServer = server.lastAcceptedClient;
-  } while (!clientInServer);
-
-  auto sentData = new ubyte[16777216];
-  sentData[0..$] = 'a';
-  client.addDataToSend(sentData);
-  assert(client.send());
+    auto sentData = new ubyte[16777216];
+    sentData[0..$] = 'a';
+    client.addDataToSend(sentData);
+    assert(client.send());
   
-  immutable(ubyte)[] receivedData;
-  do {
-    assert(clientInServer.receive);
-    receivedData ~= clientInServer.lastReceivedData;
-  } while (receivedData.length < sentData.length);
-  assert(sentData == receivedData);
+    immutable(ubyte)[] receivedData;
+    do {
+      assert(clientInServer.receive);
+      receivedData ~= clientInServer.lastReceivedData;
+    } while (receivedData.length < sentData.length);
+    assert(sentData == receivedData);
+  }
 }
