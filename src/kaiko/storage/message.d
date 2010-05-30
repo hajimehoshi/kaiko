@@ -14,7 +14,9 @@ enum MessageType {
 import std.stdio;
 
 struct Message {
+
   MessageType type;
+  string itemName;
   
   //mixin MessagePackable;
 
@@ -57,8 +59,10 @@ unittest {
   {
     Message message = {
       MessageType.UNSUBCRIBE,
+      "foo",
     }, result;
     result.deserialize(message.serialize());
     assert(message.type == result.type);
+    assert(message.itemName == result.itemName);
   }
 }
