@@ -1,8 +1,8 @@
-module kaiko.test.mocksession;
+module kaiko.test.mockipcsession;
 
 version (unittest) {
 
-  final class MockSession {
+  final class MockIPCSession {
 
     private immutable(ubyte)[][] dataCollectionToSend_;
     public immutable(ubyte)[][] receivedDataCollection_ = [[]];
@@ -47,7 +47,7 @@ version (unittest) {
 }
 
 unittest {
-  auto session = new MockSession();
+  auto session = new MockIPCSession();
   session.receivedDataCollection_ ~= [1, 2, 3];
   assert([] == session.lastReceivedData);
   assert(session.receive());

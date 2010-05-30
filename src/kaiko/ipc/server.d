@@ -4,11 +4,11 @@ import std.traits;
 
 final class Server(SessionProcessor) {
 
-  alias SessionProcessor.Session Session;
-  alias Session.TransportClient.Server TransportServer;
+  alias SessionProcessor.IPCSession IPCSession;
+  alias IPCSession.TransportClient.Server TransportServer;
   private TransportServer transportServer_;
   private SessionProcessor sessionProcessor_;
-  private bool[Session] sessions_;
+  private bool[IPCSession] ipcSessions_;
 
   public this(TransportServer transportServer, SessionProcessor sessionProcessor) {
     this.transportServer_ = transportServer;
@@ -19,22 +19,22 @@ final class Server(SessionProcessor) {
     this.transportServer_.accept();
     auto client = this.transportServer_.lastAcceptedClient;
     if (client) {
-      this.sessions_[new Session(client)] = true;
+      this.ipcSessions_[new IPCSession(client)] = true;
     }
     // receiving
-    foreach (session; this.sessions_.keys) {
+    foreach (session; this.ipcSessions_.keys) {
       if (!session.receive()) {
         session.close();
-        this.sessions_.remove(session);
+        this.ipcSessions_.remove(session);
       }
     }
     // processing
-    this.sessionProcessor_.process(this.sessions_.keys);
+    this.sessionProcessor_.process(this.ipcSessions_.keys);
     // sending
-    foreach (session; this.sessions_.keys) {
+    foreach (session; this.ipcSessions_.keys) {
       if (!session.send()) {
         session.close();
-        this.sessions_.remove(session);
+        this.ipcSessions_.remove(session);
       }
     }
   }
