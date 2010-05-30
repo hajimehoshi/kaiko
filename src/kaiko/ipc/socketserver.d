@@ -152,8 +152,8 @@ unittest {
 }
 
 unittest {
+  // send empty data
   {
-    // send empty data
     auto server = new SocketServer();
     scope (exit) { server.close(); }
 
@@ -170,8 +170,8 @@ unittest {
     client.close();
     assert(!client.send());
   }
+  // send big data
   {
-    // send big data
     auto server = new SocketServer();
     scope (exit) { server.close(); }
 

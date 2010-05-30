@@ -1,6 +1,6 @@
 DMD = dmd
 
-DFLAGS         = -Isrc -version=Unicode -version=WindowsVista -op -w
+DFLAGS         = -Isrc -version=Unicode -version=WindowsVista -op -w -wi
 DFLAGS_DEBUG   = -debug -g -gc -unittest
 DFLAGS_RELEASE = -release -inline -O -L/exet:nt/su:windows:4.0
 
