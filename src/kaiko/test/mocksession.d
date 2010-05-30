@@ -17,7 +17,7 @@ version (unittest) {
     }
 
     @property
-    public immutable(ubyte)[] lastReceivedData() {
+    public immutable(ubyte)[] lastReceivedData() const {
       if (this.receivedDataCollection_.length) {
         return this.receivedDataCollection_[0];
       } else {

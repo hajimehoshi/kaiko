@@ -15,6 +15,7 @@ import std.stdio;
 
 struct Message {
   MessageType type;
+  
   //mixin MessagePackable;
 
   public void mp_pack(Packer)(ref Packer packer) const {

@@ -35,7 +35,7 @@ final class SocketClient {
   }
 
   @property
-  public immutable(ubyte)[] lastReceivedData() {
+  public immutable(ubyte)[] lastReceivedData() const {
     return this.lastReceivedData_;
   }
 

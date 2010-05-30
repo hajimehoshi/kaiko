@@ -55,7 +55,7 @@ final class SocketServer {
   }
 
   @property
-  public ushort port() {
+  public ushort port() const {
     return this.port_;
   }
 

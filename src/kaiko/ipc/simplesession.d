@@ -47,7 +47,7 @@ final class SimpleSession(TransportClient_) {
   }
 
   @property
-  public immutable(ubyte)[] lastReceivedData() {
+  public immutable(ubyte)[] lastReceivedData() const {
     if (this.lastReceivedDataCollection_.length) {
       return this.lastReceivedDataCollection_[0];
     } else {
