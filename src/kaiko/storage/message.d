@@ -21,7 +21,7 @@ struct Message {
   public void mp_pack(Packer)(ref Packer packer) const {
     packer.packArray(this.tupleof.length);
     foreach (i, member; this.tupleof) {
-      static if (i == 0) {
+      static if (is(typeof(member) T == enum)) {
         packer.pack(cast(int)member);
       } else {
         packer.pack(member);
@@ -34,7 +34,7 @@ struct Message {
       throw new InvalidTypeException("mp_Object must be Array type");
     }
     foreach (i, member; this.tupleof) {
-      static if (i == 0) {
+      static if (is(typeof(member) T == enum)) {
         this.tupleof[i] = cast(typeof(member))(object.via.array[i].as!int);
       } else {
         this.tupleof[i] = object.via.array[i].as!(typeof(member));
