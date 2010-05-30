@@ -3,12 +3,12 @@ module kaiko.storage.message;
 import msgpack.msgpack;
 
 enum MessageType {
-  Subcribe,
-  Unsubcribe,
-  Create,
-  Read,
-  Update,
-  Delete,
+  SUBCRIBE,
+  UNSUBCRIBE,
+  CREATE,
+  READ,
+  UPDATE,
+  DELETE,
 }
 
 import std.stdio;
@@ -56,7 +56,7 @@ struct Message {
 unittest {
   {
     Message message = {
-      MessageType.Unsubcribe,
+      MessageType.UNSUBCRIBE,
     }, result;
     result.deserialize(message.serialize());
     assert(message.type == result.type);

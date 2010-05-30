@@ -9,16 +9,16 @@ final class SimpleSession(TransportClient_) {
   alias TransportClient_ TransportClient;
 
   private enum ReceivingState {
-    Initial,
-    Length,
-    Data,
-    Terminated,
+    INITIAL,
+    LENGTH,
+    DATA,
+    TERMINATED,
   }
 
   private TransportClient transportClient_;
   private bool isActive_ = true;
   private immutable(ubyte)[][] lastReceivedDataCollection_;
-  private ReceivingState receivingState_ = ReceivingState.Initial;
+  private ReceivingState receivingState_ = ReceivingState.INITIAL;
   private int nextDataLength_;
   private immutable(ubyte)[] bufferedData_;
 
@@ -41,7 +41,7 @@ final class SimpleSession(TransportClient_) {
     this.transportClient_.close();
     this.isActive_ = false;
     this.lastReceivedDataCollection_ = null;
-    this.receivingState_ = ReceivingState.Terminated;
+    this.receivingState_ = ReceivingState.TERMINATED;
     this.nextDataLength_ = 0;
     this.bufferedData_ = null;
   }
@@ -73,7 +73,7 @@ final class SimpleSession(TransportClient_) {
     }
     for (;;) {
       final switch (this.receivingState_) {
-      case ReceivingState.Initial:
+      case ReceivingState.INITIAL:
         if (!this.bufferedData_.length) {
           return true;
         }
@@ -81,12 +81,12 @@ final class SimpleSession(TransportClient_) {
         assert(!this.nextDataLength_);
         if (this.bufferedData_[0] == 0x80) {
           this.bufferedData_ = this.bufferedData_[1..$];
-          this.receivingState_ = ReceivingState.Length;
+          this.receivingState_ = ReceivingState.LENGTH;
         } else {
-          this.receivingState_ = ReceivingState.Terminated;
+          this.receivingState_ = ReceivingState.TERMINATED;
         }
         break;
-      case ReceivingState.Length:
+      case ReceivingState.LENGTH:
         if (!this.bufferedData_.length) {
           return true;
         }
@@ -97,7 +97,7 @@ final class SimpleSession(TransportClient_) {
           length = bytesToLength(this.bufferedData_, readBytesNum);
         } catch (Exception) {
           // TODO: logging
-          this.receivingState_ = ReceivingState.Terminated;
+          this.receivingState_ = ReceivingState.TERMINATED;
           break;
         }
         assert(0 <= length);
@@ -107,15 +107,15 @@ final class SimpleSession(TransportClient_) {
           this.bufferedData_ = this.bufferedData_[readBytesNum..$];
           if (length) {
             this.nextDataLength_ = length;
-            this.receivingState_ = ReceivingState.Data;
+            this.receivingState_ = ReceivingState.DATA;
           } else {
             // empty size
             // TODO: logging
-            this.receivingState_ = ReceivingState.Initial;
+            this.receivingState_ = ReceivingState.INITIAL;
           }
         }
         break;
-      case ReceivingState.Data:
+      case ReceivingState.DATA:
         if (!this.bufferedData_.length) {
           return true;
         }
@@ -126,10 +126,10 @@ final class SimpleSession(TransportClient_) {
         }
         this.lastReceivedDataCollection_ ~= this.bufferedData_[0..this.nextDataLength_];
         this.bufferedData_ = this.bufferedData_[this.nextDataLength_..$];
-        this.receivingState_ = ReceivingState.Initial;
+        this.receivingState_ = ReceivingState.INITIAL;
         this.nextDataLength_ = 0;
         break;
-      case ReceivingState.Terminated:
+      case ReceivingState.TERMINATED:
         if (this.lastReceivedDataCollection_.length) {
           return true;
         } else {
