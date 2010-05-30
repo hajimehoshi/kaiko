@@ -22,7 +22,7 @@ struct Message {
     packer.packArray(this.tupleof.length);
     foreach (i, member; this.tupleof) {
       static if (is(typeof(member) T == enum)) {
-        packer.pack(cast(int)member);
+        packer.pack(cast(T)member);
       } else {
         packer.pack(member);
       }
@@ -35,7 +35,7 @@ struct Message {
     }
     foreach (i, member; this.tupleof) {
       static if (is(typeof(member) T == enum)) {
-        this.tupleof[i] = cast(typeof(member))(object.via.array[i].as!int);
+        this.tupleof[i] = cast(typeof(member))(object.via.array[i].as!T);
       } else {
         this.tupleof[i] = object.via.array[i].as!(typeof(member));
       }
