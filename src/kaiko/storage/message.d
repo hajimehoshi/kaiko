@@ -20,14 +20,26 @@ struct Message {
 
   public void mp_pack(Packer)(ref Packer packer) const {
     packer.packArray(this.tupleof.length);
-    packer.pack(cast(int)this.type);
+    foreach (i, member; this.tupleof) {
+      static if (i == 0) {
+        packer.pack(cast(int)member);
+      } else {
+        packer.pack(member);
+      }
+    }
   }
 
   public void mp_unpack(mp_Object object) {
     if (object.type != mp_Type.ARRAY) {
       throw new InvalidTypeException("mp_Object must be Array type");
     }
-    this.type = cast(MessageType)(object.via.array[0].as!int);
+    foreach (i, member; this.tupleof) {
+      static if (i == 0) {
+        this.tupleof[i] = cast(typeof(member))(object.via.array[i].as!int);
+      } else {
+        this.tupleof[i] = object.via.array[i].as!(typeof(member));
+      }
+    }
   }
 
   public void deserialize(in ubyte[] bytes) {
@@ -35,8 +47,8 @@ struct Message {
     this.mp_unpack(unpack(bytes));
   }
 
-  public immutable(ubyte)[] serialize() {
-    return pack(this).idup;
+  public ubyte[] serialize() {
+    return pack(this);
   }
 
 }
@@ -44,16 +56,9 @@ struct Message {
 unittest {
   {
     Message message = {
-      MessageType.Subcribe,
-    }, result;
-    result.deserialize(message.serialize());
-    assert(MessageType.Subcribe == result.type);
-  }
-  {
-    Message message = {
       MessageType.Unsubcribe,
     }, result;
     result.deserialize(message.serialize());
-    assert(MessageType.Unsubcribe == result.type);
+    assert(message.type == result.type);
   }
 }
