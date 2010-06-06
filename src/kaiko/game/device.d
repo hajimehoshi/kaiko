@@ -105,12 +105,7 @@ final class Device {
     this.d3dDevice_.SetFVF(D3DFVF_XYZRHW | D3DFVF_TEX1);
     scope (exit) { this.d3dDevice_.Present(null, null, null, null); }
     {
-      {
-        immutable result = this.d3dDevice_.BeginScene();
-        if (FAILED(result)) {
-          throw new Exception(to!string(result));
-        }
-      }
+      this.d3dDevice_.BeginScene();
       scope (exit) { this.d3dDevice_.EndScene(); }
       {
         this.d3dDevice_.SetRenderTarget(0, this.d3dOffscreenSurface_);
@@ -132,14 +127,13 @@ final class Device {
         }
       }
       {
-        immutable x2 = offscreenTextureWidth_ * 2;
-        immutable y2 = offscreenTextureHeight_ * 2;
-        Vertex[4] vertices = [{ 0,  0,  0, 1, 0, 0, },
-                              { x2, 0,  0, 1, 1, 0, },
-                              { 0,  y2, 0, 1, 0, 1, },
-                              { x2, y2, 0, 1, 1, 1, }];
-        this.d3dDevice_.SetTexture(0, this.d3dOffscreenTexture_);
-        this.d3dDevice_.DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertices.ptr, typeof(vertices[0]).sizeof);
+        RECT sourceRect = { 0, 0, 320, 240 };
+        RECT destRect   = { 0, 0, 640, 480 };
+        this.d3dDevice_.StretchRect(this.d3dOffscreenSurface_,
+                                    &sourceRect,
+                                    this.d3dBackBufferSurface_,
+                                    &destRect,
+                                    D3DTEXF_POINT);
       }
     }
   }

@@ -37,6 +37,8 @@ final class Application {
     }
     MSG msg;
     Sprite[] sprites = [new Sprite(renderer.d3dDevice, "d.png")];
+    sprites[0].x = 10;
+    sprites[0].y = 10;
     while (msg.message != WM_QUIT) {
       if (PeekMessage(&msg, null, 0, 0, PM_REMOVE)) {
         TranslateMessage(&msg);

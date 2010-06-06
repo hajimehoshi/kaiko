@@ -7,6 +7,9 @@ import win32.directx.d3d9;
 import win32.directx.d3dx9;
 import win32.windows;
 
+// render target の指定
+// 
+
 align(4) struct D3DXIMAGE_INFO {
   UINT Width;
   UINT Height;

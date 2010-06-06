@@ -35,12 +35,13 @@ final class MainWindow {
 
   public this() {
     RECT rect = { 0, 0, 640, 480 };
-    if (!AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, false)) {
+    immutable style = WS_OVERLAPPEDWINDOW & ~WS_THICKFRAME & ~WS_MAXIMIZEBOX;
+    if (!AdjustWindowRect(&rect, style, false)) {
       throw new Exception(sysErrorString(GetLastError()));
     }
     this.hWnd_ = CreateWindow(toUTF16z(typeof(this).wndClassName_),
                               toUTF16z("Fooo"),
-                              WS_OVERLAPPEDWINDOW & ~WS_THICKFRAME & ~WS_MAXIMIZEBOX,
+                              style,
                               CW_USEDEFAULT, CW_USEDEFAULT,
                               rect.right - rect.left, rect.bottom - rect.top,
                               null, null, Application.moduleHandle, null);
