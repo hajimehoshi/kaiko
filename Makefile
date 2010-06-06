@@ -6,7 +6,7 @@ DFLAGS_RELEASE = -release -inline -O -L/exet:nt/su:windows:4.0
 
 PROGRAM = kaiko.exe
 
-LIBS = $(shell find lib -name "*.lib")
+LIBS = $(shell find lib -name "*.lib") d3d9.lib d3dx9.lib d3dx9d.lib
 SRCS = $(shell find src/kaiko -name "*.d") src/main.d
 
 .PHONY: debug release clean
@@ -18,10 +18,10 @@ debug: build\debug\$(PROGRAM)
 
 release: build\release\$(PROGRAM)
 
-build\debug\$(PROGRAM): $(SRCS) $(LIBS)
+build\debug\$(PROGRAM): $(SRCS)
 	$(DMD) $(SRCS) $(LIBS) $(DFLAGS) $(DFLAGS_DEBUG) -of$@
 
-build\release\$(PROGRAM): $(SRCS) $(LIBS)
+build\release\$(PROGRAM): $(SRCS)
 	$(DMD) $(SRCS) $(LIBS) $(DFLAGS) $(DFLAGS_RELEASE) -of$@
 
 clean:

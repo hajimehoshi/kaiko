@@ -19,22 +19,26 @@ final class Server(SessionProcessor) {
     this.transportServer_.accept();
     auto client = this.transportServer_.lastAcceptedClient;
     if (client) {
-      this.ipcSessions_[new IPCSession(client)] = true;
+      auto ipcSession = new IPCSession(client);
+      this.ipcSessions_[ipcSession] = true;
+      this.sessionProcessor_.add(ipcSession);
     }
     // receiving
-    foreach (session; this.ipcSessions_.keys) {
-      if (!session.receive()) {
-        session.close();
-        this.ipcSessions_.remove(session);
+    foreach (ipcSession; this.ipcSessions_.keys) {
+      if (!ipcSession.receive()) {
+        this.sessionProcessor_.remove(ipcSession);
+        ipcSession.close();
+        this.ipcSessions_.remove(ipcSession);
       }
     }
     // processing
-    this.sessionProcessor_.process(this.ipcSessions_.keys);
+    this.sessionProcessor_.process();
     // sending
-    foreach (session; this.ipcSessions_.keys) {
-      if (!session.send()) {
-        session.close();
-        this.ipcSessions_.remove(session);
+    foreach (ipcSession; this.ipcSessions_.keys) {
+      if (!ipcSession.send()) {
+        this.sessionProcessor_.remove(ipcSession);
+        ipcSession.close();
+        this.ipcSessions_.remove(ipcSession);
       }
     }
   }

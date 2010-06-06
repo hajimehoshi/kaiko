@@ -1017,12 +1017,33 @@ extern(Windows)
 			
 	HRESULT D3DXCreateTextureFromFileA(
 			LPDIRECT3DDEVICE9 pDevice,
-			LPCTSTR pSrcFile,
+			LPCSTR pSrcFile,
+			LPDIRECT3DTEXTURE9 * ppTexture);
+
+        HRESULT D3DXCreateTextureFromFileW(
+			LPDIRECT3DDEVICE9 pDevice,
+			LPCWSTR pSrcFile,
 			LPDIRECT3DTEXTURE9 * ppTexture);
 
 	HRESULT D3DXCreateTextureFromFileExA(
 	        IDirect3DDevice9         pDevice,
 	        LPCSTR                    pSrcFile,
+	        UINT                      Width,
+	        UINT                      Height,
+	        UINT                      MipLevels,
+	        DWORD                     Usage,
+	        D3DFORMAT                 Format,
+	        D3DPOOL                   Pool,
+	        DWORD                     Filter,
+	        DWORD                     MipFilter,
+	        D3DCOLOR                  ColorKey,
+	        D3DXIMAGE_INFO*           pSrcInfo,
+	        PALETTEENTRY*             pPalette,
+	        IDirect3DTexture9*       ppTexture);
+
+        HRESULT D3DXCreateTextureFromFileExW(
+	        IDirect3DDevice9         pDevice,
+	        LPCWSTR                   pSrcFile,
 	        UINT                      Width,
 	        UINT                      Height,
 	        UINT                      MipLevels,

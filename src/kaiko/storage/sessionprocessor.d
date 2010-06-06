@@ -1,6 +1,7 @@
 module kaiko.storage.sessionprocessor;
 
 import kaiko.storage.serversession;
+import kaiko.storage.session;
 
 version (unittest) {
   import kaiko.test.mockipcsession;
@@ -9,8 +10,25 @@ version (unittest) {
 final class SessionProcessor(IPCSession_) {
 
   alias IPCSession_ IPCSession;
+  private Session[IPCSession] sessions_;
 
-  public void process(in IPCSession[] ipcSessions) {
+  public void add(IPCSession ipcSession) {
+    this.sessions_[ipcSession] = new Session();
+  }
+
+  public void process() {
+    foreach (ipcSession, serverSession; this.sessions_) {
+      
+    }
+  }
+
+  public void remove(IPCSession ipcSession) {
+    if (ipcSession in this.sessions_) {
+      this.sessions_[ipcSession].close();
+      this.sessions_.remove(ipcSession);
+    } else {
+      // logging
+    }
   }
 
 }
@@ -19,7 +37,6 @@ unittest {
   // empty
   {
     auto processor = new SessionProcessor!MockIPCSession();
-    MockIPCSession[] sessions;
-    processor.process(sessions);
+    processor.process();
   }
 }
