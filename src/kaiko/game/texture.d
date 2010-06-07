@@ -27,8 +27,8 @@ final class Texture(Device_) {
 
   private Device device_;
   private IDirect3DTexture9 d3dTexture_;
-  private int textureWidth_, textureHeight_;
-  private int width_, height_;
+  private immutable int textureWidth_, textureHeight_;
+  private immutable int width_, height_;
 
   invariant() {
     assert(this.device_);

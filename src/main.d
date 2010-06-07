@@ -17,6 +17,6 @@ import std.stdio;
 
 void main(string[] args) {
   auto mainWindow = new MainWindow!Application;
-  auto device = new Device!Application(mainWindow.handle);
+  auto device = new Device(mainWindow.handle, Application.width, Application.height);
   return Application.run(mainWindow.handle, device);
 }

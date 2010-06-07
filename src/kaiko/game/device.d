@@ -22,7 +22,7 @@ unittest {
   static assert(512 == roundUp(257));
 }
 
-final class Device(Application) {
+final class Device {
 
   struct Vertex {
     float x, y, z, rhw;
@@ -34,8 +34,7 @@ final class Device(Application) {
   private IDirect3DTexture9 d3dOffscreenTexture_;
   private IDirect3DSurface9 d3dOffscreenSurface_;
   private IDirect3DSurface9 d3dBackBufferSurface_;
-  private static const offscreenTextureWidth_  = roundUp(Application.width);
-  private static const offscreenTextureHeight_ = roundUp(Application.height);
+  private immutable int width_, height_;
 
   invariant() {
     assert(this.direct3D_);
@@ -45,7 +44,9 @@ final class Device(Application) {
     assert(this.d3dBackBufferSurface_);
   }
 
-  public this(HWND hWnd) {
+  public this(HWND hWnd, int width, int height) {
+    this.width_ = width;
+    this.height_ = height;
     this.direct3D_ = Direct3DCreate9(D3D_SDK_VERSION);
     D3DPRESENT_PARAMETERS presentParameters;
     with (presentParameters) {
@@ -73,8 +74,8 @@ final class Device(Application) {
     this.d3dDevice_.SetRenderState(D3DRS_LIGHTING, false);
     this.d3dDevice_.SetRenderState(D3DRS_LOCALVIEWER, false);
     {
-      immutable result = this.d3dDevice_.CreateTexture(offscreenTextureWidth_,
-                                                       offscreenTextureHeight_,
+      immutable result = this.d3dDevice_.CreateTexture(roundUp(width_),
+                                                       roundUp(height_),
                                                        1,
                                                        D3DUSAGE_RENDERTARGET,
                                                        D3DFMT_A8R8G8B8,
@@ -139,8 +140,8 @@ final class Device(Application) {
         }
       }
       {
-        RECT sourceRect = { 0, 0, Application.width, Application.height };
-        RECT destRect   = { 0, 0, Application.width * 2, Application.height * 2 };
+        RECT sourceRect = { 0, 0, this.width_, this.height_ };
+        RECT destRect   = { 0, 0, this.width_ * 2, this.height_ * 2 };
         this.d3dDevice_.StretchRect(this.d3dOffscreenSurface_,
                                     &sourceRect,
                                     this.d3dBackBufferSurface_,
