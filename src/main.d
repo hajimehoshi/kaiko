@@ -16,7 +16,7 @@ unittest {
 import std.stdio;
 
 void main(string[] args) {
-  auto mainWindow = new MainWindow;
-  auto device = new Device(mainWindow.handle);
+  auto mainWindow = new MainWindow!Application;
+  auto device = new Device!Application(mainWindow.handle);
   return Application.run(mainWindow.handle, device);
 }

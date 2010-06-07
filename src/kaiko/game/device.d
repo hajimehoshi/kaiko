@@ -5,17 +5,45 @@ import std.utf;
 import std.windows.syserror;
 import win32.directx.d3d9;
 import win32.directx.d3dx9;
-import kaiko.game.sprite;
 
-final class Device {
+private pure nothrow roundUp(int x) {
+  immutable x2 = x - 1;
+  immutable x3 = x2 | (x2 >> 1);
+  immutable x4 = x3 | (x3 >> 2);
+  immutable x5 = x4 | (x4 >> 4);
+  immutable x6 = x5 | (x5 >> 8);
+  immutable x7 = x6 | (x6 >> 16);
+  return x6 + 1;
+}
+
+unittest {
+  static assert(256 == roundUp(255));
+  static assert(256 == roundUp(256));
+  static assert(512 == roundUp(257));
+}
+
+final class Device(Application) {
+
+  struct Vertex {
+    float x, y, z, rhw;
+    float tu, tv;
+  }
 
   private IDirect3D9 direct3D_;
   private IDirect3DDevice9 d3dDevice_;
   private IDirect3DTexture9 d3dOffscreenTexture_;
   private IDirect3DSurface9 d3dOffscreenSurface_;
   private IDirect3DSurface9 d3dBackBufferSurface_;
-  private static const offscreenTextureWidth_  = 512;
-  private static const offscreenTextureHeight_ = 256;
+  private static const offscreenTextureWidth_  = roundUp(Application.width);
+  private static const offscreenTextureHeight_ = roundUp(Application.height);
+
+  invariant() {
+    assert(this.direct3D_);
+    assert(this.d3dDevice_);
+    assert(this.d3dOffscreenTexture_);
+    assert(this.d3dOffscreenSurface_);
+    assert(this.d3dBackBufferSurface_);
+  }
 
   public this(HWND hWnd) {
     this.direct3D_ = Direct3DCreate9(D3D_SDK_VERSION);
@@ -90,18 +118,14 @@ final class Device {
   }
 
   @property
-  public IDirect3DDevice9 d3dDevice() {
+  public IDirect3DDevice9 lowerDevice() {
     return this.d3dDevice_;
   }
 
-  public void render(Sprite[] sprites) in {
+  public void update(Drawable)(Drawable[] drawables) in {
     assert(this.d3dDevice_);
   } body {
     this.d3dDevice_.Clear(0, null, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
-    struct Vertex {
-      float x, y, z, rhw;
-      float tu, tv;
-    }
     this.d3dDevice_.SetFVF(D3DFVF_XYZRHW | D3DFVF_TEX1);
     scope (exit) { this.d3dDevice_.Present(null, null, null, null); }
     {
@@ -110,25 +134,13 @@ final class Device {
       {
         this.d3dDevice_.SetRenderTarget(0, this.d3dOffscreenSurface_);
         scope (exit) { this.d3dDevice_.SetRenderTarget(0, this.d3dBackBufferSurface_); }
-        foreach (sprite; sprites) {
-          this.d3dDevice_.Clear(0, null, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
-          immutable x      = sprite.x;
-          immutable y      = sprite.y;
-          immutable width  = sprite.width;
-          immutable height = sprite.height;
-          immutable tu     = cast(float)sprite.width  / sprite.textureWidth;
-          immutable tv     = cast(float)sprite.height / sprite.textureHeight;
-          Vertex[4] vertices = [{ x,         y,          0, 1, 0,  0,  },
-                                { x + width, y,          0, 1, tu, 0,  },
-                                { x,         y + height, 0, 1, 0,  tv, },
-                                { x + width, y + height, 0, 1, tu, tv, }];
-          this.d3dDevice_.SetTexture(0, sprite.d3dTexture);
-          this.d3dDevice_.DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertices.ptr, typeof(vertices[0]).sizeof);
+        foreach (drawable; drawables) {
+          drawable.draw();
         }
       }
       {
-        RECT sourceRect = { 0, 0, 320, 240 };
-        RECT destRect   = { 0, 0, 640, 480 };
+        RECT sourceRect = { 0, 0, Application.width, Application.height };
+        RECT destRect   = { 0, 0, Application.width * 2, Application.height * 2 };
         this.d3dDevice_.StretchRect(this.d3dOffscreenSurface_,
                                     &sourceRect,
                                     this.d3dBackBufferSurface_,

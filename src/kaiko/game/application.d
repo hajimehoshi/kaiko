@@ -3,8 +3,12 @@ module kaiko.game.application;
 import std.windows.syserror;
 import win32.windows;
 import kaiko.game.sprite;
+import kaiko.game.texture;
 
 final class Application {
+
+  public static immutable width = 256;
+  public static immutable height = 224;
 
   @property
   public static int cmdShow() {
@@ -28,7 +32,7 @@ final class Application {
     return moduleHandle;
   }
 
-  public static int run(Renderer)(HWND hWnd, Renderer renderer) in {
+  public static int run(Device)(HWND hWnd, Device device) in {
     assert(hWnd);
   } body {
     ShowWindow(hWnd, typeof(this).cmdShow);
@@ -36,7 +40,8 @@ final class Application {
       throw new Exception(sysErrorString(GetLastError()));
     }
     MSG msg;
-    Sprite[] sprites = [new Sprite(renderer.d3dDevice, "d.png")];
+    auto texture = new Texture!Device(device, "d.png");
+    auto sprites = [new Sprite!(Texture!Device)(texture)];
     sprites[0].x = 10;
     sprites[0].y = 10;
     while (msg.message != WM_QUIT) {
@@ -45,7 +50,7 @@ final class Application {
         DispatchMessage(&msg);
       } else {
         Sleep(1);
-        renderer.render(sprites);
+        device.update(sprites);
       }
     }
     return cast(int)msg.wParam;

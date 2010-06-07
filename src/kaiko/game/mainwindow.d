@@ -3,9 +3,8 @@ module kaiko.game.mainwindow;
 import std.utf;
 import std.windows.syserror;
 import win32.windows;
-import kaiko.game.application;
 
-final class MainWindow {
+final class MainWindow(Application) {
 
   private static string wndClassName_ = "KaikoMainWindowClass";
   
@@ -34,7 +33,7 @@ final class MainWindow {
   private HWND hWnd_;
 
   public this() {
-    RECT rect = { 0, 0, 640, 480 };
+    RECT rect = { 0, 0, Application.width * 2, Application.height * 2 };
     immutable style = WS_OVERLAPPEDWINDOW & ~WS_THICKFRAME & ~WS_MAXIMIZEBOX;
     if (!AdjustWindowRect(&rect, style, false)) {
       throw new Exception(sysErrorString(GetLastError()));

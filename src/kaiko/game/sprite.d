@@ -1,103 +1,36 @@
 module kaiko.game.sprite;
 
-import std.conv;
 import std.utf;
 import std.windows.syserror;
 import win32.directx.d3d9;
 import win32.directx.d3dx9;
 import win32.windows;
 
-// render target の指定
-// 
+final class Sprite(Texture) {
 
-align(4) struct D3DXIMAGE_INFO {
-  UINT Width;
-  UINT Height;
-  UINT Depth;
-  UINT MipLevels;
-  D3DFORMAT Format;
-  D3DRESOURCETYPE ResourceType;
-  D3DXIMAGE_FILEFORMAT ImageFileFormat;
-}
+  private Texture texture_;
+  private int x_, y_;
 
-extern (Windows) {
-  HRESULT D3DXGetImageInfoFromFileW(LPCWSTR pSrcFile, D3DXIMAGE_INFO* pSrcInfo);
-}
-
-final class Sprite {
-
-  private IDirect3DTexture9 d3dTexture_;
-  private int textureWidth_, textureHeight_;
-  private int width_, height_;
-  private int x_;
-  private int y_;
-
-  public this(IDirect3DDevice9 device, string path) {
-    {
-      D3DXIMAGE_INFO imageInfo;
-      D3DXGetImageInfoFromFileW(toUTF16z(path), &imageInfo);
-      this.width_  = imageInfo.Width;
-      this.height_ = imageInfo.Height;
-    }
-    {
-      assert(std.file.exists(path)); // TODO: throw error
-      immutable result = D3DXCreateTextureFromFileExW(device,
-                                                      toUTF16z(path),
-                                                      this.width_,
-                                                      this.height_,
-                                                      1,
-                                                      0,
-                                                      D3DFMT_A8R8G8B8,
-                                                      D3DPOOL_DEFAULT,
-                                                      D3DX_FILTER_NONE,
-                                                      D3DX_DEFAULT,
-                                                      0xff,
-                                                      null,
-                                                      null,
-                                                      &this.d3dTexture_);
-      if (FAILED(result)) {
-        throw new Exception(to!string(result));
-      }
-    }
-    assert(this.d3dTexture_);
-    {
-      D3DSURFACE_DESC surfaceDesc;
-      this.d3dTexture_.GetLevelDesc(0, &surfaceDesc);
-      this.textureWidth_ = surfaceDesc.Width;
-      this.textureHeight_ = surfaceDesc.Height;
-    }
+  public this(Texture texture) {
+    this.texture_ = texture;
   }
 
-  ~this() {
-    if (this.d3dTexture_) {
-      this.d3dTexture_.Release();
-      this.d3dTexture_ = null;
-    }
-  }
-
-  @property
-  public IDirect3DTexture9 d3dTexture() {
-    return this.d3dTexture_;
-  }
-
-  @property
-  public int height() const {
-    return this.height_;
-  }
-
-  @property
-  public int textureHeight() const {
-    return this.textureHeight_;
-  }
-
-  @property
-  public int textureWidth() const {
-    return this.textureWidth_;
-  }
-
-  @property
-  public int width() const {
-    return this.width_;
+  public void draw() {
+    // TODO: move to GC
+    auto lowerDevice = this.texture_.device.lowerDevice;
+    lowerDevice.Clear(0, null, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
+    immutable x      = this.x;
+    immutable y      = this.y;
+    immutable width  = this.texture_.width;
+    immutable height = this.texture_.height;
+    immutable tu     = cast(float)this.texture_.width  / this.texture_.textureWidth;
+    immutable tv     = cast(float)this.texture_.height / this.texture_.textureHeight;
+    Texture.Device.Vertex[4] vertices = [{ x,         y,          0, 1, 0,  0,  },
+                                         { x + width, y,          0, 1, tu, 0,  },
+                                         { x,         y + height, 0, 1, 0,  tv, },
+                                         { x + width, y + height, 0, 1, tu, tv, }];
+    lowerDevice.SetTexture(0, this.texture_.lowerTexture);
+    lowerDevice.DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertices.ptr, typeof(vertices[0]).sizeof);
   }
 
   @property
