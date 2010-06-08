@@ -1,7 +1,9 @@
 module kaiko.game.application;
 
+import std.random;
 import std.windows.syserror;
 import win32.windows;
+import kaiko.game.drawablecollection;
 import kaiko.game.sprite;
 import kaiko.game.texture;
 
@@ -40,17 +42,25 @@ final class Application {
       throw new Exception(sysErrorString(GetLastError()));
     }
     MSG msg;
-    auto texture = new Texture!Device(device, "d.png");
-    auto sprites = [new Sprite!(Texture!Device)(texture)];
-    sprites[0].x = 10;
-    sprites[0].y = 10;
+    auto sprites = new Sprite!(Texture!Device)[2560];
+    for (int i = 0; i < sprites.length; i++) {
+      auto texture = new Texture!Device(device, "d.png");
+      sprites[i] = new Sprite!(typeof(texture))(texture);
+    }
+    auto drawableCollection = new DrawableCollection!(typeof(sprites[0]))(sprites);
+
     while (msg.message != WM_QUIT) {
       if (PeekMessage(&msg, null, 0, 0, PM_REMOVE)) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
       } else {
         Sleep(1);
-        device.update(sprites);
+        foreach (i, sprite; sprites) {
+          sprite.x = uniform(0, 256);
+          sprite.y = uniform(0, 256);
+          sprite.z = i;
+        }
+        device.update(drawableCollection);
       }
     }
     return cast(int)msg.wParam;

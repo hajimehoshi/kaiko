@@ -1,0 +1,2 @@
+module kaiko.game.rectdrawer;
+

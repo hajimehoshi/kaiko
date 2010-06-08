@@ -25,13 +25,11 @@ final class Texture(Device_) {
 
   alias Device_ Device;
 
-  private Device device_;
   private IDirect3DTexture9 d3dTexture_;
   private immutable int textureWidth_, textureHeight_;
   private immutable int width_, height_;
 
   invariant() {
-    assert(this.device_);
     assert(this.d3dTexture_);
     assert(0 < this.width_);
     assert(this.width_ <= this.textureWidth_);
@@ -40,7 +38,6 @@ final class Texture(Device_) {
   }
 
   public this(Device device, string path) {
-    this.device_ = device;
     auto lowerDevice = device.lowerDevice;
     {
       D3DXIMAGE_INFO imageInfo;
@@ -82,11 +79,6 @@ final class Texture(Device_) {
       this.d3dTexture_.Release();
       this.d3dTexture_ = null;
     }
-  }
-
-  @property
-  public Device device() {
-    return this.device_;
   }
 
   @property

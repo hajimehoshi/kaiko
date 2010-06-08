@@ -9,28 +9,14 @@ import win32.windows;
 final class Sprite(Texture) {
 
   private Texture texture_;
-  private int x_, y_;
+  private int x_, y_, z_;
 
   public this(Texture texture) {
     this.texture_ = texture;
   }
 
-  public void draw() {
-    // TODO: move to GC
-    auto lowerDevice = this.texture_.device.lowerDevice;
-    lowerDevice.Clear(0, null, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
-    immutable x      = this.x;
-    immutable y      = this.y;
-    immutable width  = this.texture_.width;
-    immutable height = this.texture_.height;
-    immutable tu     = cast(float)this.texture_.width  / this.texture_.textureWidth;
-    immutable tv     = cast(float)this.texture_.height / this.texture_.textureHeight;
-    Texture.Device.Vertex[4] vertices = [{ x,         y,          0, 1, 0,  0,  },
-                                         { x + width, y,          0, 1, tu, 0,  },
-                                         { x,         y + height, 0, 1, 0,  tv, },
-                                         { x + width, y + height, 0, 1, tu, tv, }];
-    lowerDevice.SetTexture(0, this.texture_.lowerTexture);
-    lowerDevice.DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertices.ptr, typeof(vertices[0]).sizeof);
+  public void draw(GraphicsContext)(GraphicsContext gc) {
+    gc.drawTexture(this.texture_, this.x_, this.y_, this.z_);
   }
 
   @property
@@ -51,6 +37,16 @@ final class Sprite(Texture) {
   @property
   public void y(int y) {
     this.y_ = y;
+  }
+
+  @property
+  public int z() const {
+    return this.z_;
+  }
+
+  @property
+  public void z(int z) {
+    this.z_ = z;
   }
   
 }
