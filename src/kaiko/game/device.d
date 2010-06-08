@@ -163,7 +163,7 @@ final class Device {
       this.d3dDevice_ = d3dDevice;
     }
 
-    public void drawRectangle(int x1, int y1, int x2, int y2, Color color) {
+    public void drawRectangle(int x1, int y1, int x2, int y2, int z, Color color) {
       /*Vertex[4] vertices = [{ x,         y,          0, 1,  },
                             { x + width, y,          0, 1,  },
                             { x,         y + height, 0, 1, },
@@ -175,9 +175,9 @@ final class Device {
     public void drawTexture(Texture)(Texture texture, int x, int y, int z) {
       immutable width  = texture.width;
       immutable height = texture.height;
+      immutable color  = 0xffffffff;
       immutable tu     = cast(float)texture.width  / texture.textureWidth;
       immutable tv     = cast(float)texture.height / texture.textureHeight;
-      immutable color = 0xffffff00 | z;
       Vertex[4] vertices = [{ x,         y,          z, 1, color, 0,  0,  },
                             { x + width, y,          z, 1, color, tu, 0,  },
                             { x,         y + height, z, 1, color, 0,  tv, },

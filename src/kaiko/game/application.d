@@ -42,9 +42,9 @@ final class Application {
       throw new Exception(sysErrorString(GetLastError()));
     }
     MSG msg;
-    auto sprites = new Sprite!(Texture!Device)[2560];
+    auto texture = new Texture!Device(device, "d.png");
+    auto sprites = new Sprite!(typeof(texture))[2560];
     for (int i = 0; i < sprites.length; i++) {
-      auto texture = new Texture!Device(device, "d.png");
       sprites[i] = new Sprite!(typeof(texture))(texture);
     }
     auto drawableCollection = new DrawableCollection!(typeof(sprites[0]))(sprites);
