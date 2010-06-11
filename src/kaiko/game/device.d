@@ -194,7 +194,7 @@ final class Device {
       this.d3dDevice_.DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertices.ptr, typeof(vertices[0]).sizeof);*/
     }
 
-    public void drawTexture(Texture, AffineMatrix)(Texture texture, ref const(AffineMatrix) affineMatrix, int z, ubyte alpha) {
+    public void drawTexture(Texture, AffineMatrix)(Texture texture, in AffineMatrix affineMatrix, int z, ubyte alpha) {
       // TODO: Z 座標のため遅延処理を行う
       immutable width  = texture.width;
       immutable height = texture.height;
