@@ -5,6 +5,7 @@ import kaiko.game.affinematrix;
 final class Sprite(Texture) {
 
   private Texture texture_;
+  private ubyte alpha_;
   private int x_, y_, z_;
 
   public this(Texture texture) {
@@ -21,7 +22,17 @@ final class Sprite(Texture) {
       tx = this.x_;
       ty = this.y_;
     };
-    gc.drawTexture(this.texture_, affineMatrix, this.z_);
+    gc.drawTexture(this.texture_, affineMatrix, this.z_, this.alpha_);
+  }
+
+  @property
+  public ubyte alpha() const {
+    return this.alpha_;
+  }
+
+  @property
+  public void alpha(ubyte alpha) {
+    this.alpha_ = alpha;
   }
 
   @property

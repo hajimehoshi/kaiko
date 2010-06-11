@@ -43,7 +43,7 @@ final class Application {
     }
     MSG msg;
     auto texture = new Texture!Device(device, "d.png");
-    auto sprites = new Sprite!(typeof(texture))[1];
+    auto sprites = new Sprite!(typeof(texture))[2];
     for (int i = 0; i < sprites.length; i++) {
       sprites[i] = new Sprite!(typeof(texture))(texture);
     }
@@ -56,9 +56,10 @@ final class Application {
       } else {
         Sleep(1);
         foreach (i, sprite; sprites) {
-          sprite.x = 10;//uniform(0, 256);
-          sprite.y = 10;//uniform(0, 256);
+          sprite.x = i * 10;
+          sprite.y = i * 20;
           sprite.z = i;
+          sprite.alpha = 128;
         }
         device.update(drawableCollection);
       }
