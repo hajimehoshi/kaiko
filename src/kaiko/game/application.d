@@ -28,7 +28,7 @@ final class Application {
   public static HANDLE moduleHandle() {
     static HANDLE moduleHandle;
     if (!moduleHandle) {
-      moduleHandle = GetModuleHandle(null);      
+      moduleHandle = GetModuleHandle(null);
       assert(moduleHandle);
     }
     return moduleHandle;
@@ -43,7 +43,7 @@ final class Application {
     }
     MSG msg;
     auto texture = new Texture!Device(device, "d.png");
-    auto sprites = new Sprite!(typeof(texture))[2560];
+    auto sprites = new Sprite!(typeof(texture))[1];
     for (int i = 0; i < sprites.length; i++) {
       sprites[i] = new Sprite!(typeof(texture))(texture);
     }
@@ -56,8 +56,8 @@ final class Application {
       } else {
         Sleep(1);
         foreach (i, sprite; sprites) {
-          sprite.x = uniform(0, 256);
-          sprite.y = uniform(0, 256);
+          sprite.x = 10;//uniform(0, 256);
+          sprite.y = 10;//uniform(0, 256);
           sprite.z = i;
         }
         device.update(drawableCollection);

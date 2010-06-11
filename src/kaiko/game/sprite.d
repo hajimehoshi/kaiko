@@ -1,10 +1,6 @@
 module kaiko.game.sprite;
 
-import std.utf;
-import std.windows.syserror;
-import win32.directx.d3d9;
-import win32.directx.d3dx9;
-import win32.windows;
+import kaiko.game.affinematrix;
 
 final class Sprite(Texture) {
 
@@ -16,7 +12,16 @@ final class Sprite(Texture) {
   }
 
   public void draw(GraphicsContext)(GraphicsContext gc) {
-    gc.drawTexture(this.texture_, this.x_, this.y_, this.z_);
+    AffineMatrix affineMatrix;
+    with (affineMatrix) {
+      a = 1;
+      b = 0;
+      c = 0;
+      d = 1;
+      tx = this.x_;
+      ty = this.y_;
+    };
+    gc.drawTexture(this.texture_, affineMatrix, this.z_);
   }
 
   @property

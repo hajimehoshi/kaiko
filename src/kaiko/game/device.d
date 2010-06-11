@@ -26,12 +26,13 @@ unittest {
 final class Device {
 
   struct Vertex {
-    float x, y, z, rhw;
+    float x, y, z;
     DWORD color;
     float tu, tv;
   }
 
   private immutable int width_, height_;
+  private immutable int textureWidth_, textureHeight_;
   private IDirect3D9 direct3D_;
   private IDirect3DDevice9 d3dDevice_;
   private IDirect3DTexture9 d3dOffscreenTexture_;
@@ -50,6 +51,8 @@ final class Device {
   public this(HWND hWnd, int width, int height) {
     this.width_ = width;
     this.height_ = height;
+    this.textureWidth_ = roundUp(width);
+    this.textureHeight_ = roundUp(height);
     this.direct3D_ = Direct3DCreate9(D3D_SDK_VERSION);
     D3DPRESENT_PARAMETERS presentParameters;
     with (presentParameters) {
@@ -77,8 +80,8 @@ final class Device {
     this.d3dDevice_.SetRenderState(D3DRS_LIGHTING, false);
     this.d3dDevice_.SetRenderState(D3DRS_LOCALVIEWER, false);
     {
-      immutable result = this.d3dDevice_.CreateTexture(roundUp(width_),
-                                                       roundUp(height_),
+      immutable result = this.d3dDevice_.CreateTexture(this.textureWidth_,
+                                                       this.textureHeight_,
                                                        1,
                                                        D3DUSAGE_RENDERTARGET,
                                                        D3DFMT_A8R8G8B8,
@@ -132,11 +135,18 @@ final class Device {
     assert(this.d3dDevice_);
   } body {
     this.d3dDevice_.Clear(0, null, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
-    this.d3dDevice_.SetFVF(D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1);
+    this.d3dDevice_.SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
     scope (exit) { this.d3dDevice_.Present(null, null, null, null); }
     {
       this.d3dDevice_.BeginScene();
       scope (exit) { this.d3dDevice_.EndScene(); }
+      {
+        D3DXMATRIX d3dxMatrix;
+        D3DXMatrixIdentity(&d3dxMatrix);
+        this.d3dDevice_.SetTransform(D3DTS_WORLDMATRIX(0), &d3dxMatrix);
+        D3DXMatrixOrthoOffCenterLH(&d3dxMatrix, 0, this.textureWidth_, this.textureHeight_, 0, 0, 100);
+        this.d3dDevice_.SetTransform(D3DTS_PROJECTION, &d3dxMatrix);
+      }
       {
         this.d3dDevice_.SetRenderTarget(0, this.d3dOffscreenSurface_);
         scope (exit) { this.d3dDevice_.SetRenderTarget(0, this.d3dBackBufferSurface_); }
@@ -172,16 +182,34 @@ final class Device {
       this.d3dDevice_.DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertices.ptr, typeof(vertices[0]).sizeof);*/
     }
 
-    public void drawTexture(Texture)(Texture texture, int x, int y, int z) {
+    public void drawTexture(Texture, AffineMatrix)(Texture texture, in AffineMatrix affineMatrix, int z) {
       immutable width  = texture.width;
       immutable height = texture.height;
       immutable color  = 0xffffffff;
       immutable tu     = cast(float)texture.width  / texture.textureWidth;
       immutable tv     = cast(float)texture.height / texture.textureHeight;
-      Vertex[4] vertices = [{ x,         y,          z, 1, color, 0,  0,  },
-                            { x + width, y,          z, 1, color, tu, 0,  },
-                            { x,         y + height, z, 1, color, 0,  tv, },
-                            { x + width, y + height, z, 1, color, tu, tv, }];
+      D3DXMATRIX d3dxMatrix;
+      with (d3dxMatrix) {
+        _11 = affineMatrix.a;
+        _12 = affineMatrix.b;
+        _13 = 0; _14 = 0;
+        _21 = affineMatrix.c;
+        _22 = affineMatrix.d;
+        _23 = 0; _24 = 0;
+        _31 = 0; _32 = 0; _33 = 1; _34 = 0;
+        _41 = affineMatrix.tx;
+        _42 = affineMatrix.ty;
+        _43 = 0; _44 = 1;
+      }
+      this.d3dDevice_.SetTransform(D3DTS_VIEW, &d3dxMatrix);
+      /*Vertex[4] vertices = [{ 0,     0,      z, 1, color, 0,  0,  },
+                            { width, 0,      z, 1, color, tu, 0,  },
+                            { 0,     height, z, 1, color, 0,  tv, },
+                            { width, height, z, 1, color, tu, tv, }];*/
+      Vertex[4] vertices = [{ 0,     0,      z, color, 0,  0,  },
+                            { width, 0,      z, color, tu, 0,  },
+                            { 0,     height, z, color, 0,  tv, },
+                            { width, height, z, color, tu, tv, }];
       this.d3dDevice_.SetTexture(0, texture.lowerTexture);
       this.d3dDevice_.DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertices.ptr, typeof(vertices[0]).sizeof);
     }

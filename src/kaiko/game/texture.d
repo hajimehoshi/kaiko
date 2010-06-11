@@ -1,6 +1,5 @@
 module kaiko.game.texture;
 
-import std.conv;
 import std.utf;
 import std.windows.syserror;
 import win32.directx.d3d9;
@@ -21,9 +20,7 @@ extern (Windows) {
   HRESULT D3DXGetImageInfoFromFileW(LPCWSTR pSrcFile, D3DXIMAGE_INFO* pSrcInfo);
 }
 
-final class Texture(Device_) {
-
-  alias Device_ Device;
+final class Texture(Device) {
 
   private IDirect3DTexture9 d3dTexture_;
   private immutable int textureWidth_, textureHeight_;
@@ -62,7 +59,7 @@ final class Texture(Device_) {
                                                       null,
                                                       &this.d3dTexture_);
       if (FAILED(result)) {
-        throw new Exception(to!string(result));
+        throw new Exception(std.conv.to!string(result));
       }
     }
     assert(this.d3dTexture_);
