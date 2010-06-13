@@ -8,6 +8,8 @@ import win32.directx.d3dx9;
 import kaiko.game.color;
 import kaiko.game.affinematrix;
 import kaiko.game.colormatrix;;
+import kaiko.game.sprite;
+import kaiko.game.texture;
 
 private pure nothrow roundUp(int x) {
   immutable x2 = x - 1;
@@ -170,9 +172,9 @@ technique test
         if (d3dxBuffer.GetBufferSize()) {
           char* errorStrPtr = cast(char*)d3dxBuffer.GetBufferPointer();
           immutable len = d3dxBuffer.GetBufferSize();
-          auto errorStr = new char[len];
-          errorStr[0..len] = errorStrPtr[0..len];
-          throw new Exception(cast(immutable)errorStr);
+          string errorStr;
+          errorStr ~= errorStrPtr[0..len];
+          throw new Exception(errorStr);
         } else {
           throw new Exception(to!string(result));
         }
@@ -266,14 +268,22 @@ technique test
       this.d3dDevice_.DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertices.ptr, typeof(vertices[0]).sizeof);*/
     }
 
-    /*public void drawSprites(Sprite)(in Sprite[] sprites) {
-      sprites
-      }*/
+    public void drawSprite(in Sprite sprite) {
+      this.drawTexture(sprite.texture, sprite.affineMatrix, sprite.z, sprite.colorMatrix);
+    }
 
-    public void drawTexture(Texture)(Texture texture,
-                                     in AffineMatrix affineMatrix,
-                                     int z,
-                                     in ColorMatrix colorMatrix) in {
+    public void drawSprites(in Sprite[] sprites) {
+      auto sortedSprites = sprites.dup;
+      std.algorithm.sort!(q{a.z < b.z})(sortedSprites);
+      foreach (sprite; sortedSprites) {
+        this.drawSprite(sprite);
+      }
+    }
+
+    private void drawTexture(in Texture texture,
+                             in AffineMatrix affineMatrix,
+                             int z,
+                             in ColorMatrix colorMatrix) in {
       assert(std.math.isFinite(affineMatrix.a));
       assert(std.math.isFinite(affineMatrix.b));
       assert(std.math.isFinite(affineMatrix.c));
@@ -286,7 +296,6 @@ technique test
         }
       }
     } body {
-      // TODO: Z 座標のため遅延処理を行う
       {
         auto valName = "Texture\0".dup;
         this.device_.d3dxEffect_.SetTexture(valName.ptr, texture.lowerTexture);

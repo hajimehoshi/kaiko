@@ -5,6 +5,7 @@ import std.windows.syserror;
 import win32.directx.d3d9;
 import win32.directx.d3dx9;
 import win32.windows;
+import kaiko.game.device;
 
 align(4) struct D3DXIMAGE_INFO {
   UINT Width;
@@ -20,7 +21,7 @@ extern (Windows) {
   HRESULT D3DXGetImageInfoFromFileW(LPCWSTR pSrcFile, D3DXIMAGE_INFO* pSrcInfo);
 }
 
-final class Texture(Device) {
+final class Texture {
 
   private IDirect3DTexture9 d3dTexture_;
   private immutable int textureWidth_, textureHeight_;
@@ -85,6 +86,11 @@ final class Texture(Device) {
 
   @property
   public IDirect3DTexture9 lowerTexture() {
+    return this.d3dTexture_;
+  }
+
+  @property
+  public const(IDirect3DTexture9) lowerTexture() const {
     return this.d3dTexture_;
   }
 

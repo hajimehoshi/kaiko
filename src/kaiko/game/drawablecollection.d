@@ -9,8 +9,12 @@ final class DrawableCollection(Drawable) {
   }
 
   public void draw(GraphicsContext)(GraphicsContext gc) {
-    foreach (drawable; this.drawables_) {
-      drawable.draw(gc);
+    static if (is(Drawable == kaiko.game.sprite.Sprite)) {
+      gc.drawSprites(this.drawables_);
+    } else {
+      foreach (drawable; this.drawables_) {
+        drawable.draw(gc);
+      }
     }
   }
 
