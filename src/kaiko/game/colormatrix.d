@@ -3,7 +3,8 @@ module kaiko.game.colormatrix;
 import std.traits;
 
 final class ColorMatrixBase(Float) if (isFloatingPoint!(Float)) {
-  private Float[4][4] elements_;
+
+  private Float[5][4] elements_;
 
   public Float opIndex(int i, int j) const in {
     assert(0 <= i);

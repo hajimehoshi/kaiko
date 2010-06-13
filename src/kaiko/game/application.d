@@ -56,12 +56,11 @@ final class Application {
       } else {
         Sleep(1);
         foreach (i, sprite; sprites) {
-          sprite.affineMatrix.tx = i * 10;
-          sprite.affineMatrix.ty = i * 20;
+          sprite.affineMatrix.tx = i * 50;
+          sprite.affineMatrix.ty = i * 50;
           sprite.z = i;
-          sprite.alpha = cast(ubyte)(i * 64 + 64);
+          auto colorMatrix = sprite.colorMatrix;
           if (i == 1) {
-            auto colorMatrix = sprite.colorMatrix;
             foreach (j; 0..3) {
               colorMatrix[j, 0] = 0.2989;
               colorMatrix[j, 1] = 0.5866;
@@ -71,8 +70,10 @@ final class Application {
             colorMatrix[3, 0] = 0;
             colorMatrix[3, 1] = 0;
             colorMatrix[3, 2] = 0;
-            colorMatrix[3, 3] = 1;
+          } else {
+            colorMatrix[0, 4] = -0.5;
           }
+          colorMatrix[3, 3] = 0.5;
         }
         device.update(drawableCollection);
       }

@@ -9,7 +9,6 @@ final class Sprite(Texture) {
   private AffineMatrix affineMatrix_;
   private int z_;
   private ColorMatrix colorMatrix_;
-  private ubyte alpha_ = 255;
 
   invariant() {
     assert(this.texture_);
@@ -26,25 +25,29 @@ final class Sprite(Texture) {
     this.colorMatrix_[0, 1] = 0;
     this.colorMatrix_[0, 2] = 0;
     this.colorMatrix_[0, 3] = 0;
+    this.colorMatrix_[0, 4] = 0;
 
     this.colorMatrix_[1, 0] = 0;
     this.colorMatrix_[1, 1] = 0;
     this.colorMatrix_[1, 2] = 1;
     this.colorMatrix_[1, 3] = 0;
+    this.colorMatrix_[1, 4] = 0;
 
     this.colorMatrix_[2, 0] = 0;
     this.colorMatrix_[2, 1] = 0;
     this.colorMatrix_[2, 2] = 1;
     this.colorMatrix_[2, 3] = 0;
+    this.colorMatrix_[2, 4] = 0;
     
     this.colorMatrix_[3, 0] = 0;
     this.colorMatrix_[3, 1] = 0;
     this.colorMatrix_[3, 2] = 0;
     this.colorMatrix_[3, 3] = 1;
+    this.colorMatrix_[3, 4] = 0;
   }
 
   public void draw(GraphicsContext)(GraphicsContext gc) {
-    gc.drawTexture(this.texture_, this.affineMatrix_, this.z_, this.colorMatrix_, this.alpha_);
+    gc.drawTexture(this.texture_, this.affineMatrix_, this.z_, this.colorMatrix_);
   }
 
   @property
@@ -55,16 +58,6 @@ final class Sprite(Texture) {
   @property
   public const(AffineMatrix) affineMatrix() const {
     return this.affineMatrix_;
-  }
-
-  @property
-  public ubyte alpha() const {
-    return this.alpha_;
-  }
-
-  @property
-  public void alpha(ubyte alpha) {
-    this.alpha_ = alpha;
   }
 
   @property

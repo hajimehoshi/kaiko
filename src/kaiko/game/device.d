@@ -29,7 +29,6 @@ final class Device {
 
   struct Vertex {
     float x, y, z;
-    DWORD color;
     float tu, tv;
   }
 
@@ -84,7 +83,7 @@ final class Device {
     this.d3dDevice_.SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
     this.d3dDevice_.SetRenderState(D3DRS_LIGHTING, false);
     this.d3dDevice_.SetRenderState(D3DRS_LOCALVIEWER, false);
-    this.d3dDevice_.SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
+    this.d3dDevice_.SetFVF(D3DFVF_XYZ | D3DFVF_TEX1);
     this.d3dDevice_.SetRenderState(D3DRS_ALPHABLENDENABLE, true);
     this.d3dDevice_.SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
     this.d3dDevice_.SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
@@ -131,6 +130,7 @@ final class Device {
     {
       auto shader = "
 float4x4 ColorMatrix;
+float4 ColorMatrixTranslation;
 texture Texture;
 
 sampler TextureSampler = sampler_state {
@@ -138,15 +138,14 @@ sampler TextureSampler = sampler_state {
 };
 
 struct PixelIn {
-  float4 Diffuse : COLOR0;
   float2 TexUV : TEXCOORD0;
 };
 
 float4 PS(PixelIn p) : COLOR
 {
-  float4 color = tex2D(TextureSampler, p.TexUV) * p.Diffuse;
-  float3 filteredColor = mul(ColorMatrix, float4(color.r, color.g, color.b, 1)).rgb;
-  return float4(filteredColor.r, filteredColor.g, filteredColor.b, color.a);
+  float4 color = tex2D(TextureSampler, p.TexUV);
+  color += ColorMatrixTranslation;
+  return mul(ColorMatrix, color);
 }
 
 technique test
@@ -155,7 +154,8 @@ technique test
   {
     PixelShader = compile ps_2_0 PS();
   }
-}".dup;
+}
+".dup;
       ID3DXBuffer d3dxBuffer;
       immutable result = D3DXCreateEffect(this.d3dDevice_,
                                           shader.ptr,
@@ -269,17 +269,16 @@ technique test
     public void drawTexture(Texture)(Texture texture,
                                      in AffineMatrix affineMatrix,
                                      int z,
-                                     in ColorMatrix colorMatrix,
-                                     ubyte alpha) in {
+                                     in ColorMatrix colorMatrix) in {
       assert(std.math.isFinite(affineMatrix.a));
       assert(std.math.isFinite(affineMatrix.b));
       assert(std.math.isFinite(affineMatrix.c));
       assert(std.math.isFinite(affineMatrix.d));
       assert(std.math.isFinite(affineMatrix.tx));
       assert(std.math.isFinite(affineMatrix.ty));
-      foreach (j; 0..4) {
-        foreach (i; 0..4) {
-          assert(std.math.isFinite(colorMatrix[j, i]));
+      foreach (i; 0..4) {
+        foreach (j; 0..5) {
+          assert(std.math.isFinite(colorMatrix[i, j]));
         }
       }
     } body {
@@ -312,13 +311,20 @@ technique test
         }
         this.device_.d3dxEffect_.SetMatrix(valName.ptr, &d3dxMatrix);
       }
+      {
+        auto valName = "ColorMatrixTranslation\0".dup;
+        float[] values = [colorMatrix[0, 4],
+                          colorMatrix[1, 4],
+                          colorMatrix[2, 4],
+                          colorMatrix[3, 4]];
+        this.device_.d3dxEffect_.SetFloatArray(valName.ptr, values.ptr, values.length);
+      }
       this.device_.d3dxEffect_.Begin(null, 0);
       scope (exit) { this.device_.d3dxEffect_.End(); }
       this.device_.d3dxEffect_.BeginPass(0);
       scope (exit) { this.device_.d3dxEffect_.EndPass(); }
       immutable width  = texture.width;
       immutable height = texture.height;
-      immutable diffuseColor  = D3DCOLOR_ARGB(alpha, 0xff, 0xff, 0xff);
       immutable tu     = cast(float)texture.width  / texture.textureWidth;
       immutable tv     = cast(float)texture.height / texture.textureHeight;
       D3DXMATRIX d3dxMatrix;
@@ -335,10 +341,10 @@ technique test
         _43 = 0; _44 = 1;
       }
       this.device_.d3dDevice_.SetTransform(D3DTS_VIEW, &d3dxMatrix);
-      Vertex[4] vertices = [{ 0,     0,      z, diffuseColor, 0,  0,  },
-                            { width, 0,      z, diffuseColor, tu, 0,  },
-                            { 0,     height, z, diffuseColor, 0,  tv, },
-                            { width, height, z, diffuseColor, tu, tv, }];
+      Vertex[4] vertices = [{ 0,     0,      z, 0,  0,  },
+                            { width, 0,      z, tu, 0,  },
+                            { 0,     height, z, 0,  tv, },
+                            { width, height, z, tu, tv, }];
       this.device_.d3dDevice_.SetTexture(0, texture.lowerTexture);
       this.device_.d3dDevice_.DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertices.ptr, typeof(vertices[0]).sizeof);
     }
