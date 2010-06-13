@@ -5,21 +5,6 @@ import std.windows.syserror;
 import win32.directx.d3d9;
 import win32.directx.d3dx9;
 import win32.windows;
-import kaiko.game.device;
-
-align(4) struct D3DXIMAGE_INFO {
-  UINT Width;
-  UINT Height;
-  UINT Depth;
-  UINT MipLevels;
-  D3DFORMAT Format;
-  D3DRESOURCETYPE ResourceType;
-  D3DXIMAGE_FILEFORMAT ImageFileFormat;
-}
-
-extern (Windows) {
-  HRESULT D3DXGetImageInfoFromFileW(LPCWSTR pSrcFile, D3DXIMAGE_INFO* pSrcInfo);
-}
 
 final class Texture {
 
@@ -35,35 +20,14 @@ final class Texture {
     assert(this.height_ <= this.textureHeight_);
   }
 
-  public this(Device device, string path) {
-    auto lowerDevice = device.lowerDevice;
-    {
-      D3DXIMAGE_INFO imageInfo;
-      D3DXGetImageInfoFromFileW(toUTF16z(path), &imageInfo);
-      this.width_  = imageInfo.Width;
-      this.height_ = imageInfo.Height;
-    }
-    {
-      assert(std.file.exists(path)); // TODO: throw error
-      immutable result = D3DXCreateTextureFromFileExW(lowerDevice,
-                                                      toUTF16z(path),
-                                                      this.width_,
-                                                      this.height_,
-                                                      1,
-                                                      0,
-                                                      D3DFMT_A8R8G8B8,
-                                                      D3DPOOL_DEFAULT,
-                                                      D3DX_FILTER_NONE,
-                                                      D3DX_DEFAULT,
-                                                      0xff,
-                                                      null,
-                                                      null,
-                                                      &this.d3dTexture_);
-      if (FAILED(result)) {
-        throw new Exception(std.conv.to!string(result));
-      }
-    }
-    assert(this.d3dTexture_);
+  public this(IDirect3DTexture9 d3dTexture, int width, int height) in {
+    assert(d3dTexture);
+    assert(0 < width);
+    assert(0 < height);
+  } body {
+    this.d3dTexture_ = d3dTexture;
+    this.width_ = width;
+    this.height_ = height;
     {
       D3DSURFACE_DESC surfaceDesc;
       this.d3dTexture_.GetLevelDesc(0, &surfaceDesc);

@@ -5,9 +5,23 @@ import std.utf;
 import std.windows.syserror;
 import win32.directx.d3d9;
 import win32.directx.d3dx9;
-import kaiko.game.color;
 import kaiko.game.affinematrix;
 import kaiko.game.colormatrix;
+import kaiko.game.texture;
+
+align(4) struct D3DXIMAGE_INFO {
+  UINT Width;
+  UINT Height;
+  UINT Depth;
+  UINT MipLevels;
+  D3DFORMAT Format;
+  D3DRESOURCETYPE ResourceType;
+  D3DXIMAGE_FILEFORMAT ImageFileFormat;
+}
+
+extern (Windows) {
+  HRESULT D3DXGetImageInfoFromFileW(LPCWSTR pSrcFile, D3DXIMAGE_INFO* pSrcInfo);
+}
 
 private pure nothrow roundUp(int x) {
   immutable x2 = x - 1;
@@ -40,6 +54,7 @@ final class Device {
   private IDirect3DSurface9 d3dOffscreenSurface_;
   private IDirect3DSurface9 d3dBackBufferSurface_;
   private ID3DXEffect d3dxEffect_;
+  private TextureFactory textureFactory_;
   private GraphicsContext graphicsContext_;
 
   invariant() {
@@ -51,7 +66,11 @@ final class Device {
     assert(this.d3dxEffect_);
   }
 
-  public this(HWND hWnd, int width, int height) {
+  public this(HWND hWnd, int width, int height) in {
+    assert(hWnd);
+    assert(0 < width);
+    assert(0 < height);
+  } body {
     this.width_ = width;
     this.height_ = height;
     this.textureWidth_ = roundUp(width);
@@ -148,7 +167,7 @@ float4 PS(PixelIn p) : COLOR
   return mul(ColorMatrix, color);
 }
 
-technique test
+technique ColorMatrixFilter
 {
   pass P0
   {
@@ -168,7 +187,7 @@ technique test
                                           &d3dxBuffer);
       if (FAILED(result)) {
         if (d3dxBuffer.GetBufferSize()) {
-          char* errorStrPtr = cast(char*)d3dxBuffer.GetBufferPointer();
+          const errorStrPtr = cast(char*)d3dxBuffer.GetBufferPointer();
           immutable len = d3dxBuffer.GetBufferSize();
           string errorStr;
           errorStr ~= errorStrPtr[0..len];
@@ -180,10 +199,9 @@ technique test
     }
     assert(this.d3dxEffect_);
     {
-      auto techniqueName = "test\0".dup;
+      auto techniqueName = "ColorMatrixFilter\0".dup;
       this.d3dxEffect_.SetTechnique(techniqueName.ptr);
     }
-    this.graphicsContext_ = new GraphicsContext(this);
   }
 
   ~this() {
@@ -213,14 +231,51 @@ technique test
     }
   }
 
+  private IDirect3DTexture9 loadLowerTexture(string path) {
+    assert(std.file.exists(path)); // TODO: throw error
+    IDirect3DTexture9 d3dTexture;
+    immutable result = D3DXCreateTextureFromFileExW(this.d3dDevice_,
+                                                    toUTF16z(path),
+                                                    0,
+                                                    0,
+                                                    1,
+                                                    0,
+                                                    D3DFMT_A8R8G8B8,
+                                                    D3DPOOL_DEFAULT,
+                                                    D3DX_FILTER_NONE,
+                                                    D3DX_DEFAULT,
+                                                    0xff,
+                                                    null,
+                                                    null,
+                                                    &d3dTexture);
+    if (FAILED(result)) {
+      throw new Exception(std.conv.to!string(result));
+    }
+    return d3dTexture;
+  }
+
   @property
-  public IDirect3DDevice9 lowerDevice() {
-    return this.d3dDevice_;
+  public GraphicsContext graphicsContext() out(result) {
+    assert(result !is null);
+  } body {
+    if (!this.graphicsContext_) {
+      this.graphicsContext_ = new GraphicsContext(this);
+    }
+    return this.graphicsContext_;
+  }
+
+  @property
+  public TextureFactory textureFactory() out(result) {
+    assert(result !is null);
+  } body {
+    if (!this.textureFactory_) {
+      this.textureFactory_ = new TextureFactory(this);
+    }
+    return this.textureFactory_;
   }
 
   public void update(Drawable)(Drawable drawable) in {
     assert(drawable);
-    assert(this.d3dDevice_);
   } body {
     this.d3dDevice_.Clear(0, null, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
     scope (exit) { this.d3dDevice_.Present(null, null, null, null); }
@@ -231,7 +286,7 @@ technique test
         this.d3dDevice_.SetRenderTarget(0, this.d3dOffscreenSurface_);
         scope (exit) { this.d3dDevice_.SetRenderTarget(0, this.d3dBackBufferSurface_); }
         this.d3dDevice_.Clear(0, null, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
-        drawable.draw(this.graphicsContext_);
+        drawable.draw(this.graphicsContext);
       }
       {
         RECT sourceRect = { 0, 0, this.width_, this.height_ };
@@ -245,25 +300,43 @@ technique test
     }
   }
 
+  public final class TextureFactory {
+
+    private Device device_;
+
+    invariant() {
+      assert(this.device_ !is null);
+    }
+
+    private this(Device device) in {
+      assert(device);
+    } body {
+      this.device_ = device;
+    }
+
+    public Texture load(string path) in {
+      assert(path);
+    } body {
+      assert(std.file.exists(path)); // TODO: throw error
+      D3DXIMAGE_INFO imageInfo;
+      D3DXGetImageInfoFromFileW(toUTF16z(path), &imageInfo);
+      return new Texture(this.device_.loadLowerTexture(path), imageInfo.Width, imageInfo.Height);
+    }
+
+  }
+
   private final class GraphicsContext {
 
     private Device device_;
 
     invariant() {
-      assert(this.device_);
+      assert(this.device_ !is null);
     }
 
-    public this(Device device) {
+    private this(Device device) in {
+      assert(device);
+    } body {
       this.device_ = device;
-    }
-
-    public void drawRectangle(int x1, int y1, int x2, int y2, int z, Color color) {
-      /*Vertex[4] vertices = [{ x,         y,          0, 1,  },
-                            { x + width, y,          0, 1,  },
-                            { x,         y + height, 0, 1, },
-                            { x + width, y + height, 0, 1, }];
-      this.d3dDevice_.SetTexture(0, texture.lowerTexture);
-      this.d3dDevice_.DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertices.ptr, typeof(vertices[0]).sizeof);*/
     }
 
     public void drawSprite(Sprite)(in Sprite sprite) {

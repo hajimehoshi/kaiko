@@ -1,10 +1,7 @@
 module kaiko.game.application;
 
-import std.random;
 import std.windows.syserror;
 import win32.windows;
-import kaiko.game.drawablecollection;
-import kaiko.game.sprite;
 import kaiko.game.texture;
 
 final class ExitException : Exception {
@@ -16,7 +13,7 @@ final class ExitException : Exception {
     this.status_ = status;
   }
 
-  @property public int status() const {
+  @property public int status() {
     return this.status_;
   }
 
@@ -24,57 +21,84 @@ final class ExitException : Exception {
 
 final class Application {
 
-  public static immutable width = 256;
-  public static immutable height = 224;
+  private static Application instance_;
 
-  private this() {
+  static this() {
+    this.instance_ = new Application(256, 224);
   }
 
   @property
-  public static int cmdShow() {
-    static cmdShow = -1;
-    if (cmdShow == -1) {
+  public static Application instance() {
+    return this.instance_;
+  }
+
+  private immutable int width_, height_;
+
+  private this(int width, int height) {
+    this.width_ = width;
+    this.height_ = height;
+  }
+
+  @property
+  public int height() const {
+    return this.height_;
+  }
+
+  public void run(Device, Scene)(HWND hWnd, Device device, Scene scene) in {
+    assert(hWnd);
+    assert(device !is null);
+    assert(scene !is null);
+  } body {
+    {
       STARTUPINFO startupInfo;
       GetStartupInfo(&startupInfo);
-      cmdShow = (startupInfo.dwFlags & STARTF_USESHOWWINDOW) ? startupInfo.wShowWindow : SW_SHOWDEFAULT;
-      assert(cmdShow != -1);
+      immutable cmdShow = (startupInfo.dwFlags & STARTF_USESHOWWINDOW) ? startupInfo.wShowWindow : SW_SHOWDEFAULT;
+      ShowWindow(hWnd, cmdShow);
     }
-    return cmdShow;
-  }
-
-  @property
-  public static HANDLE moduleHandle() {
-    static HANDLE moduleHandle;
-    if (!moduleHandle) {
-      moduleHandle = GetModuleHandle(null);
-      assert(moduleHandle);
-    }
-    return moduleHandle;
-  }
-
-  public static int run(Device, Scene)(HWND hWnd, Device device, Scene scene) in {
-    assert(hWnd);
-  } body {
-    ShowWindow(hWnd, typeof(this).cmdShow);
     if (!UpdateWindow(hWnd)) {
       throw new Exception(sysErrorString(GetLastError()));
     }
-    scene.run(device);
-    return 0;
+    auto textureFactory = device.textureFactory;
+    auto gameUpdater = new GameUpdater!Device(device);
+    scene.run(textureFactory, gameUpdater);
   }
 
-  public static void update(Device, Drawable)(Device device, Drawable drawable) {
-    MSG msg;
-    if (PeekMessage(&msg, null, 0, 0, PM_REMOVE)) {
-      TranslateMessage(&msg);
-      DispatchMessage(&msg);
-    } else {
-      Sleep(1);
-      device.update(drawable);
+  @property
+  public int width() const {
+    return this.width_;
+  }
+
+  private final class GameUpdater(Device) {
+
+    private Device device_;
+
+    invariant() {
+      assert(this.device_ !is null);
     }
-    if (msg.message == WM_QUIT) {
-      throw new ExitException(cast(int)msg.wParam);
+
+    private this(Device device) in {
+      assert(device !is null);
+    } body {
+      this.device_ = device;
     }
+
+    public void update(Drawable)(Drawable drawable) {
+      MSG msg;
+      if (PeekMessage(&msg, null, 0, 0, PM_REMOVE)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+      } else {
+        Sleep(1);
+        // 1/600 秒?
+        if (drawable) {
+          this.device_.update(drawable);
+        }
+      }
+      if (msg.message == WM_QUIT) {
+        throw new ExitException(cast(int)msg.wParam);
+      }
+    }
+
   }
 
 }

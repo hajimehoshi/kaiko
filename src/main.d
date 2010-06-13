@@ -2,8 +2,8 @@ module main;
 
 import kaiko.game.application;
 import kaiko.game.device;
-import kaiko.game.mainscene;
 import kaiko.game.mainwindow;
+import kaiko.scenes.mainscene;
 import kaiko.ipc.simplesession;
 import kaiko.ipc.server;
 import kaiko.ipc.socketclient;
@@ -16,12 +16,14 @@ unittest {
 
 import std.stdio;
 
-void main(string[] args) {
-  auto mainWindow = new MainWindow!Application;
-  auto device = new Device(mainWindow.handle, Application.width, Application.height);
+int main(string[] args) {
+  auto application = Application.instance;
+  const mainWindow = new MainWindow(application.width, application.height);
+  auto device = new Device(mainWindow.handle, application.width, application.height);
   auto scene = new MainScene();
   try {
-    return Application.run(mainWindow.handle, device, scene);
+    application.run(mainWindow.handle, device, scene);
+    return 0;
   } catch (ExitException e) {
     return e.status;
   }

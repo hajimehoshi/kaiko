@@ -11,7 +11,7 @@ final class Sprite(Texture) {
   private ColorMatrix colorMatrix_;
 
   invariant() {
-    assert(this.texture_);
+    assert(this.texture_ !is null);
     assert(this.affineMatrix_);
     assert(this.colorMatrix_);
   }
