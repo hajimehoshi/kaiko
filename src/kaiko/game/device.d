@@ -272,14 +272,6 @@ technique test
       this.drawTexture(sprite.texture, sprite.affineMatrix, sprite.z, sprite.colorMatrix);
     }
 
-    public void drawSprites(in Sprite[] sprites) {
-      auto sortedSprites = sprites.dup;
-      std.algorithm.sort!(q{a.z < b.z})(sortedSprites);
-      foreach (sprite; sortedSprites) {
-        this.drawSprite(sprite);
-      }
-    }
-
     private void drawTexture(in Texture texture,
                              in AffineMatrix affineMatrix,
                              int z,

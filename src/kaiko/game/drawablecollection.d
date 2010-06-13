@@ -1,5 +1,7 @@
 module kaiko.game.drawablecollection;
 
+import std.algorithm;
+
 final class DrawableCollection(Drawable) {
 
   private Drawable[] drawables_;
@@ -9,12 +11,11 @@ final class DrawableCollection(Drawable) {
   }
 
   public void draw(GraphicsContext)(GraphicsContext gc) {
-    static if (is(Drawable == kaiko.game.sprite.Sprite)) {
-      gc.drawSprites(this.drawables_);
-    } else {
-      foreach (drawable; this.drawables_) {
-        drawable.draw(gc);
-      }
+    static if (is(typeof({ Drawable d; int z = d.z; }()))) {
+      sort!(q{a.z < b.z})(this.drawables_);
+    }
+    foreach (drawable; this.drawables_) {
+      drawable.draw(gc);
     }
   }
 
