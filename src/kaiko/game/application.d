@@ -70,10 +70,11 @@ final class Application {
             colorMatrix[3, 0] = 0;
             colorMatrix[3, 1] = 0;
             colorMatrix[3, 2] = 0;
+            colorMatrix[3, 3] = 0.5;
           } else {
-            colorMatrix[0, 4] = -0.5;
+            colorMatrix[0, 4] = 0.5;
+            colorMatrix[3, 3] = 1;
           }
-          colorMatrix[3, 3] = 0.5;
         }
         device.update(drawableCollection);
       }

@@ -266,6 +266,10 @@ technique test
       this.d3dDevice_.DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertices.ptr, typeof(vertices[0]).sizeof);*/
     }
 
+    /*public void drawSprites(Sprite)(in Sprite[] sprites) {
+      sprites
+      }*/
+
     public void drawTexture(Texture)(Texture texture,
                                      in AffineMatrix affineMatrix,
                                      int z,
@@ -330,9 +334,9 @@ technique test
       D3DXMATRIX d3dxMatrix;
       with (d3dxMatrix) {
         _11 = affineMatrix.a;
-        _12 = affineMatrix.b;
+        _12 = affineMatrix.c;
         _13 = 0; _14 = 0;
-        _21 = affineMatrix.c;
+        _21 = affineMatrix.b;
         _22 = affineMatrix.d;
         _23 = 0; _24 = 0;
         _31 = 0; _32 = 0; _33 = 1; _34 = 0;
