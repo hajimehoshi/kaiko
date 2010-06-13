@@ -309,13 +309,13 @@ technique ColorMatrixFilter
     }
 
     private this(Device device) in {
-      assert(device);
+      assert(device !is null);
     } body {
       this.device_ = device;
     }
 
     public Texture load(string path) in {
-      assert(path);
+      assert(path !is null);
     } body {
       assert(std.file.exists(path)); // TODO: throw error
       D3DXIMAGE_INFO imageInfo;
@@ -334,7 +334,7 @@ technique ColorMatrixFilter
     }
 
     private this(Device device) in {
-      assert(device);
+      assert(device !is null);
     } body {
       this.device_ = device;
     }

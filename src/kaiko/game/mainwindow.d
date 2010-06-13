@@ -54,7 +54,10 @@ final class MainWindow {
     assert(this.hWnd_);
   }
 
-  public this(int width, int height) {
+  public this(int width, int height) in {
+    assert(0 < width);
+    assert(0 < height);
+  } body {
     RECT rect = { 0, 0, width * 2, height * 2 };
     immutable style = WS_OVERLAPPEDWINDOW & ~WS_THICKFRAME & ~WS_MAXIMIZEBOX;
     if (!AdjustWindowRect(&rect, style, false)) {
