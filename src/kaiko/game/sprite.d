@@ -1,26 +1,55 @@
 module kaiko.game.sprite;
 
 import kaiko.game.affinematrix;
+import kaiko.game.colormatrix;;
 
 final class Sprite(Texture) {
 
   private Texture texture_;
   private AffineMatrix affineMatrix_;
   private int z_;
-  private ubyte alpha_;
+  private ColorMatrix colorMatrix_;
+  private ubyte alpha_ = 255;
 
   invariant() {
     assert(this.texture_);
     assert(this.affineMatrix_);
+    assert(this.colorMatrix_);
   }
 
   public this(Texture texture) {
     this.texture_ = texture;
     this.affineMatrix_ = new AffineMatrix(1, 0, 0, 1, 0, 0);
+    this.colorMatrix_ = new ColorMatrix();
+
+    this.colorMatrix_[0, 0] = 1;
+    this.colorMatrix_[0, 1] = 0;
+    this.colorMatrix_[0, 2] = 0;
+    this.colorMatrix_[0, 3] = 0;
+
+    this.colorMatrix_[1, 0] = 0;
+    this.colorMatrix_[1, 1] = 0;
+    this.colorMatrix_[1, 2] = 1;
+    this.colorMatrix_[1, 3] = 0;
+
+    this.colorMatrix_[2, 0] = 0;
+    this.colorMatrix_[2, 1] = 0;
+    this.colorMatrix_[2, 2] = 1;
+    this.colorMatrix_[2, 3] = 0;
+    
+    this.colorMatrix_[3, 0] = 0;
+    this.colorMatrix_[3, 1] = 0;
+    this.colorMatrix_[3, 2] = 0;
+    this.colorMatrix_[3, 3] = 1;
   }
 
   public void draw(GraphicsContext)(GraphicsContext gc) {
-    gc.drawTexture(this.texture_, affineMatrix, this.z_, this.alpha_);
+    gc.drawTexture(this.texture_, this.affineMatrix_, this.z_, this.colorMatrix_, this.alpha_);
+  }
+
+  @property
+  public AffineMatrix affineMatrix() {
+    return this.affineMatrix_;
   }
 
   @property
@@ -39,23 +68,13 @@ final class Sprite(Texture) {
   }
 
   @property
-  public int x() const {
-    return cast(int)this.affineMatrix_.tx;
+  public ColorMatrix colorMatrix() {
+    return this.colorMatrix_;
   }
 
   @property
-  public void x(int x) {
-    this.affineMatrix_.tx = x;
-  }
-
-  @property
-  public int y() const {
-    return cast(int)this.affineMatrix_.ty;
-  }
-
-  @property
-  public void y(int y) {
-    this.affineMatrix_.ty = y;
+  public const(ColorMatrix) colorMatrix() const {
+    return this.colorMatrix_;
   }
 
   @property

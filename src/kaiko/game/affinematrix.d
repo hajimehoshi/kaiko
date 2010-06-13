@@ -1,6 +1,8 @@
 module kaiko.game.affinematrix;
 
-class AffineMatrixBase(Float) {
+import std.traits;
+
+final class AffineMatrixBase(Float) if (isFloatingPoint!(Float)) {
 
   public Float a, b, c, d, tx, ty;
 
@@ -12,7 +14,6 @@ class AffineMatrixBase(Float) {
     this.tx = tx;
     this.ty = ty;
   }
-
 }
 
 alias AffineMatrixBase!double AffineMatrix;

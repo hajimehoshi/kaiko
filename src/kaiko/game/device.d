@@ -6,6 +6,8 @@ import std.windows.syserror;
 import win32.directx.d3d9;
 import win32.directx.d3dx9;
 import kaiko.game.color;
+import kaiko.game.affinematrix;
+import kaiko.game.colormatrix;;
 
 private pure nothrow roundUp(int x) {
   immutable x2 = x - 1;
@@ -38,6 +40,7 @@ final class Device {
   private IDirect3DTexture9 d3dOffscreenTexture_;
   private IDirect3DSurface9 d3dOffscreenSurface_;
   private IDirect3DSurface9 d3dBackBufferSurface_;
+  private ID3DXEffect d3dxEffect_;
   private GraphicsContext graphicsContext_;
 
   invariant() {
@@ -46,6 +49,7 @@ final class Device {
     assert(this.d3dOffscreenTexture_);
     assert(this.d3dOffscreenSurface_);
     assert(this.d3dBackBufferSurface_);
+    assert(this.d3dxEffect_);
   }
 
   public this(HWND hWnd, int width, int height) {
@@ -81,16 +85,9 @@ final class Device {
     this.d3dDevice_.SetRenderState(D3DRS_LIGHTING, false);
     this.d3dDevice_.SetRenderState(D3DRS_LOCALVIEWER, false);
     this.d3dDevice_.SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
-    this.d3dDevice_.SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-    this.d3dDevice_.SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
-    this.d3dDevice_.SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
-    this.d3dDevice_.SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-    this.d3dDevice_.SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
-    this.d3dDevice_.SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
     this.d3dDevice_.SetRenderState(D3DRS_ALPHABLENDENABLE, true);
     this.d3dDevice_.SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
     this.d3dDevice_.SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-    this.d3dDevice_.SetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1);
     this.d3dDevice_.SetRenderState(D3DRS_COLORVERTEX, true);
     {
       D3DXMATRIX d3dxMatrix;
@@ -131,10 +128,81 @@ final class Device {
       }
     }
     assert(this.d3dBackBufferSurface_);
-    this.graphicsContext_ = new GraphicsContext(this.d3dDevice_);
+    {
+      auto shader = "
+float4x4 ColorMatrix;
+texture Texture;
+
+sampler TextureSampler = sampler_state {
+  Texture = <Texture>;
+};
+
+struct PixelIn {
+  float4 Diffuse : COLOR0;
+  float2 TexUV : TEXCOORD0;
+};
+
+float4 PS(PixelIn p) : COLOR
+{
+  float4 color = tex2D(TextureSampler, p.TexUV) * p.Diffuse;
+  float3 filteredColor = mul(ColorMatrix, float4(color.r, color.g, color.b, 1)).rgb;
+  return float4(filteredColor.r, filteredColor.g, filteredColor.b, color.a);
+}
+
+technique test
+{
+  pass P0
+  {
+    PixelShader = compile ps_2_0 PS();
+  }
+}".dup;
+      ID3DXBuffer d3dxBuffer;
+      immutable result = D3DXCreateEffect(this.d3dDevice_,
+                                          shader.ptr,
+                                          shader.length,
+                                          null,
+                                          null,
+                                          0,
+                                          null,
+                                          &this.d3dxEffect_,
+                                          &d3dxBuffer);
+      if (FAILED(result)) {
+        if (d3dxBuffer.GetBufferSize()) {
+          char* errorStrPtr = cast(char*)d3dxBuffer.GetBufferPointer();
+          immutable len = d3dxBuffer.GetBufferSize();
+          auto errorStr = new char[len];
+          errorStr[0..len] = errorStrPtr[0..len];
+          throw new Exception(cast(immutable)errorStr);
+        } else {
+          throw new Exception(to!string(result));
+        }
+      }
+    }
+    assert(this.d3dxEffect_);
+    {
+      auto techniqueName = "test\0".dup;
+      this.d3dxEffect_.SetTechnique(techniqueName.ptr);
+    }
+    this.graphicsContext_ = new GraphicsContext(this);
   }
 
   ~this() {
+    if (this.d3dxEffect_) {
+      this.d3dxEffect_.Release();
+      this.d3dxEffect_ = null;
+    }
+    if (this.d3dBackBufferSurface_) {
+      this.d3dBackBufferSurface_.Release();
+      this.d3dBackBufferSurface_ = null;
+    }
+    if (this.d3dOffscreenSurface_) {
+      this.d3dOffscreenSurface_.Release();
+      this.d3dOffscreenSurface_ = null;
+    }
+    if (this.d3dOffscreenTexture_) {
+      this.d3dOffscreenTexture_.Release();
+      this.d3dOffscreenTexture_ = null;
+    }
     if (this.d3dDevice_) {
       this.d3dDevice_.Release();
       this.d3dDevice_ = null;
@@ -179,10 +247,14 @@ final class Device {
 
   private final class GraphicsContext {
 
-    private IDirect3DDevice9 d3dDevice_;
+    private Device device_;
 
-    public this(IDirect3DDevice9 d3dDevice) {
-      this.d3dDevice_ = d3dDevice;
+    invariant() {
+      assert(this.device_);
+    }
+
+    public this(Device device) {
+      this.device_ = device;
     }
 
     public void drawRectangle(int x1, int y1, int x2, int y2, int z, Color color) {
@@ -194,8 +266,56 @@ final class Device {
       this.d3dDevice_.DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertices.ptr, typeof(vertices[0]).sizeof);*/
     }
 
-    public void drawTexture(Texture, AffineMatrix)(Texture texture, in AffineMatrix affineMatrix, int z, ubyte alpha) {
+    public void drawTexture(Texture)(Texture texture,
+                                     in AffineMatrix affineMatrix,
+                                     int z,
+                                     in ColorMatrix colorMatrix,
+                                     ubyte alpha) in {
+      assert(std.math.isFinite(affineMatrix.a));
+      assert(std.math.isFinite(affineMatrix.b));
+      assert(std.math.isFinite(affineMatrix.c));
+      assert(std.math.isFinite(affineMatrix.d));
+      assert(std.math.isFinite(affineMatrix.tx));
+      assert(std.math.isFinite(affineMatrix.ty));
+      foreach (j; 0..4) {
+        foreach (i; 0..4) {
+          assert(std.math.isFinite(colorMatrix[j, i]));
+        }
+      }
+    } body {
       // TODO: Z 座標のため遅延処理を行う
+      {
+        auto valName = "Texture\0".dup;
+        this.device_.d3dxEffect_.SetTexture(valName.ptr, texture.lowerTexture);
+      }
+      {
+        auto valName = "ColorMatrix\0".dup;
+        D3DXMATRIX d3dxMatrix;
+        // TODO: use mixin
+        with (d3dxMatrix) {
+          _11 = colorMatrix[0, 0];
+          _12 = colorMatrix[0, 1];
+          _13 = colorMatrix[0, 2];
+          _14 = colorMatrix[0, 3];
+          _21 = colorMatrix[1, 0];
+          _22 = colorMatrix[1, 1];
+          _23 = colorMatrix[1, 2];
+          _24 = colorMatrix[1, 3];
+          _31 = colorMatrix[2, 0];
+          _32 = colorMatrix[2, 1];
+          _33 = colorMatrix[2, 2];
+          _34 = colorMatrix[2, 3];
+          _41 = colorMatrix[3, 0];
+          _42 = colorMatrix[3, 1];
+          _43 = colorMatrix[3, 2];
+          _44 = colorMatrix[3, 3];
+        }
+        this.device_.d3dxEffect_.SetMatrix(valName.ptr, &d3dxMatrix);
+      }
+      this.device_.d3dxEffect_.Begin(null, 0);
+      scope (exit) { this.device_.d3dxEffect_.End(); }
+      this.device_.d3dxEffect_.BeginPass(0);
+      scope (exit) { this.device_.d3dxEffect_.EndPass(); }
       immutable width  = texture.width;
       immutable height = texture.height;
       immutable diffuseColor  = D3DCOLOR_ARGB(alpha, 0xff, 0xff, 0xff);
@@ -214,13 +334,13 @@ final class Device {
         _42 = affineMatrix.ty;
         _43 = 0; _44 = 1;
       }
-      this.d3dDevice_.SetTransform(D3DTS_VIEW, &d3dxMatrix);
+      this.device_.d3dDevice_.SetTransform(D3DTS_VIEW, &d3dxMatrix);
       Vertex[4] vertices = [{ 0,     0,      z, diffuseColor, 0,  0,  },
                             { width, 0,      z, diffuseColor, tu, 0,  },
                             { 0,     height, z, diffuseColor, 0,  tv, },
                             { width, height, z, diffuseColor, tu, tv, }];
-      this.d3dDevice_.SetTexture(0, texture.lowerTexture);
-      this.d3dDevice_.DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertices.ptr, typeof(vertices[0]).sizeof);
+      this.device_.d3dDevice_.SetTexture(0, texture.lowerTexture);
+      this.device_.d3dDevice_.DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertices.ptr, typeof(vertices[0]).sizeof);
     }
 
   }
