@@ -7,9 +7,7 @@ import win32.directx.d3d9;
 import win32.directx.d3dx9;
 import kaiko.game.color;
 import kaiko.game.affinematrix;
-import kaiko.game.colormatrix;;
-import kaiko.game.sprite;
-import kaiko.game.texture;
+import kaiko.game.colormatrix;
 
 private pure nothrow roundUp(int x) {
   immutable x2 = x - 1;
@@ -268,14 +266,14 @@ technique test
       this.d3dDevice_.DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertices.ptr, typeof(vertices[0]).sizeof);*/
     }
 
-    public void drawSprite(in Sprite sprite) {
-      this.drawTexture(sprite.texture, sprite.affineMatrix, sprite.z, sprite.colorMatrix);
+    public void drawSprite(Sprite)(in Sprite sprite) {
+      this.drawTexture!(typeof(sprite.texture))(sprite.texture, sprite.affineMatrix, sprite.z, sprite.colorMatrix);
     }
 
-    private void drawTexture(in Texture texture,
-                             in AffineMatrix affineMatrix,
-                             int z,
-                             in ColorMatrix colorMatrix) in {
+    private void drawTexture(Texture)(in Texture texture,
+                                      in AffineMatrix affineMatrix,
+                                      int z,
+                                      in ColorMatrix colorMatrix) in {
       assert(std.math.isFinite(affineMatrix.a));
       assert(std.math.isFinite(affineMatrix.b));
       assert(std.math.isFinite(affineMatrix.c));

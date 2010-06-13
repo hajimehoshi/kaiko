@@ -43,9 +43,9 @@ final class Application {
     }
     MSG msg;
     auto texture = new Texture(device, "d.png");
-    auto sprites = new Sprite[2];
+    auto sprites = new Sprite!(typeof(texture))[2];
     for (int i = 0; i < sprites.length; i++) {
-      sprites[i] = new Sprite(texture);
+      sprites[i] = new Sprite!(typeof(texture))(texture);
     }
     auto drawableCollection = new DrawableCollection!(typeof(sprites[0]))(sprites);
 

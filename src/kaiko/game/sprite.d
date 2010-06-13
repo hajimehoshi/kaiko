@@ -2,9 +2,8 @@ module kaiko.game.sprite;
 
 import kaiko.game.affinematrix;
 import kaiko.game.colormatrix;
-import kaiko.game.texture;
 
-final class Sprite {
+final class Sprite(Texture) {
 
   private Texture texture_;
   private AffineMatrix affineMatrix_;
