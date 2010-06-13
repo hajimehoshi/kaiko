@@ -47,7 +47,7 @@ final class Sprite(Texture) {
   }
 
   public void draw(GraphicsContext)(GraphicsContext gc) {
-    gc.drawSprite(this);
+    gc.drawTexture(this.texture, this.affineMatrix, this.z, this.colorMatrix);
   }
 
   @property

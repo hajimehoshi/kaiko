@@ -339,14 +339,10 @@ technique ColorMatrixFilter
       this.device_ = device;
     }
 
-    public void drawSprite(Sprite)(in Sprite sprite) {
-      this.drawTexture!(typeof(sprite.texture))(sprite.texture, sprite.affineMatrix, sprite.z, sprite.colorMatrix);
-    }
-
-    private void drawTexture(Texture)(in Texture texture,
-                                      in AffineMatrix affineMatrix,
-                                      int z,
-                                      in ColorMatrix colorMatrix) in {
+    public void drawTexture(Texture)(in Texture texture,
+                                     in AffineMatrix affineMatrix,
+                                     int z,
+                                     in ColorMatrix colorMatrix) in {
       assert(std.math.isFinite(affineMatrix.a));
       assert(std.math.isFinite(affineMatrix.b));
       assert(std.math.isFinite(affineMatrix.c));
