@@ -20,11 +20,6 @@ int main(string[] args) {
   auto application = Application.instance;
   const mainWindow = new MainWindow(application.width, application.height);
   auto device = new Device(mainWindow.handle, application.width, application.height);
-  auto scene = new MainScene();
-  try {
-    application.run(mainWindow.handle, device, scene);
-    return 0;
-  } catch (ExitException e) {
-    return e.status;
-  }
+  auto scene = new MainScene!(typeof(device.textureFactory))(device.textureFactory);
+  return application.run(mainWindow.handle, device, scene);
 }

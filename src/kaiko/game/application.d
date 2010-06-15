@@ -1,23 +1,9 @@
 module kaiko.game.application;
 
+import core.thread;
 import std.windows.syserror;
 import win32.windows;
 import kaiko.game.texture;
-
-final class ExitException : Exception {
-
-  private immutable int status_;
-
-  public this(int status) {
-    super("Exit");
-    this.status_ = status;
-  }
-
-  @property public int status() {
-    return this.status_;
-  }
-
-}
 
 final class Application {
 
@@ -44,7 +30,7 @@ final class Application {
     return this.height_;
   }
 
-  public void run(Device, Scene)(HWND hWnd, Device device, Scene scene) in {
+  public int run(Device, Scene)(HWND hWnd, Device device, Scene scene) in {
     assert(hWnd);
     assert(device !is null);
     assert(scene !is null);
@@ -59,46 +45,27 @@ final class Application {
       throw new Exception(sysErrorString(GetLastError()));
     }
     auto textureFactory = device.textureFactory;
-    auto gameUpdater = new GameUpdater!Device(device);
-    scene.run(textureFactory, gameUpdater);
-  }
-
-  @property
-  public int width() const {
-    return this.width_;
-  }
-
-  private final class GameUpdater(Device) {
-
-    private Device device_;
-
-    invariant() {
-      assert(this.device_ !is null);
-    }
-
-    private this(Device device) in {
-      assert(device !is null);
-    } body {
-      this.device_ = device;
-    }
-
-    public void update(Drawable)(Drawable drawable) {
-      MSG msg;
+    Fiber fiber = new Fiber({ scene.run(); });
+    MSG msg;
+    while (msg.message != WM_QUIT) {
       if (PeekMessage(&msg, null, 0, 0, PM_REMOVE)) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
       } else {
         Sleep(1);
         // 1/600 秒?
-        if (drawable) {
-          this.device_.update(drawable);
+        fiber.call();
+        if (scene.drawable !is null) {
+          device.update(scene.drawable);
         }
       }
-      if (msg.message == WM_QUIT) {
-        throw new ExitException(cast(int)msg.wParam);
-      }
     }
+    return cast(int)msg.wParam;
+  }
 
+  @property
+  public int width() const {
+    return this.width_;
   }
 
 }

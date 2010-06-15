@@ -19,4 +19,9 @@ final class DrawableCollection(Drawable) {
     }
   }
 
+  @property
+  public Drawable[] values() {
+    return this.drawables_;
+  }
+
 }

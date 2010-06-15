@@ -46,6 +46,53 @@ final class Device {
     float tu, tv;
   }
 
+  public final class TextureFactory(Texture_) {
+
+    alias Texture_ Texture;
+
+    private Device device_;
+
+    invariant() {
+      assert(this.device_ !is null);
+    }
+
+    private this(Device device) in {
+      assert(device !is null);
+    } body {
+      this.device_ = device;
+    }
+
+    public Texture load(string path) in {
+      assert(path !is null);
+    } body {
+      assert(std.file.exists(path)); // TODO: throw error
+      IDirect3DTexture9 d3dTexture;
+      {
+        immutable result = D3DXCreateTextureFromFileExW(this.device_.d3dDevice_,
+                                                        toUTF16z(path),
+                                                        0,
+                                                        0,
+                                                        1,
+                                                        0,
+                                                        D3DFMT_A8R8G8B8,
+                                                        D3DPOOL_DEFAULT,
+                                                        D3DX_FILTER_NONE,
+                                                        D3DX_DEFAULT,
+                                                        0xff,
+                                                        null,
+                                                        null,
+                                                        &d3dTexture);
+        if (FAILED(result)) {
+          throw new Exception(std.conv.to!string(result));
+        }
+      }
+      D3DXIMAGE_INFO imageInfo;
+      D3DXGetImageInfoFromFileW(toUTF16z(path), &imageInfo);
+      return new Texture(d3dTexture, imageInfo.Width, imageInfo.Height);
+    }
+
+  }
+
   private immutable int width_, height_;
   private immutable int textureWidth_, textureHeight_;
   private IDirect3D9 direct3D_;
@@ -54,7 +101,7 @@ final class Device {
   private IDirect3DSurface9 d3dOffscreenSurface_;
   private IDirect3DSurface9 d3dBackBufferSurface_;
   private ID3DXEffect d3dxEffect_;
-  private TextureFactory textureFactory_;
+  private TextureFactory!Texture textureFactory_;
   private GraphicsContext graphicsContext_;
 
   invariant() {
@@ -231,29 +278,6 @@ technique ColorMatrixFilter
     }
   }
 
-  private IDirect3DTexture9 loadLowerTexture(string path) {
-    assert(std.file.exists(path)); // TODO: throw error
-    IDirect3DTexture9 d3dTexture;
-    immutable result = D3DXCreateTextureFromFileExW(this.d3dDevice_,
-                                                    toUTF16z(path),
-                                                    0,
-                                                    0,
-                                                    1,
-                                                    0,
-                                                    D3DFMT_A8R8G8B8,
-                                                    D3DPOOL_DEFAULT,
-                                                    D3DX_FILTER_NONE,
-                                                    D3DX_DEFAULT,
-                                                    0xff,
-                                                    null,
-                                                    null,
-                                                    &d3dTexture);
-    if (FAILED(result)) {
-      throw new Exception(std.conv.to!string(result));
-    }
-    return d3dTexture;
-  }
-
   @property
   public GraphicsContext graphicsContext() out(result) {
     assert(result !is null);
@@ -265,11 +289,11 @@ technique ColorMatrixFilter
   }
 
   @property
-  public TextureFactory textureFactory() out(result) {
+  public TextureFactory!Texture textureFactory() out(result) {
     assert(result !is null);
   } body {
     if (!this.textureFactory_) {
-      this.textureFactory_ = new TextureFactory(this);
+      this.textureFactory_ = new TextureFactory!Texture(this);
     }
     return this.textureFactory_;
   }
@@ -298,31 +322,6 @@ technique ColorMatrixFilter
                                     D3DTEXF_POINT);
       }
     }
-  }
-
-  public final class TextureFactory {
-
-    private Device device_;
-
-    invariant() {
-      assert(this.device_ !is null);
-    }
-
-    private this(Device device) in {
-      assert(device !is null);
-    } body {
-      this.device_ = device;
-    }
-
-    public Texture load(string path) in {
-      assert(path !is null);
-    } body {
-      assert(std.file.exists(path)); // TODO: throw error
-      D3DXIMAGE_INFO imageInfo;
-      D3DXGetImageInfoFromFileW(toUTF16z(path), &imageInfo);
-      return new Texture(this.device_.loadLowerTexture(path), imageInfo.Width, imageInfo.Height);
-    }
-
   }
 
   private final class GraphicsContext {

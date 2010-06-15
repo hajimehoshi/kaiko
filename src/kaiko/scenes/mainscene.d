@@ -4,16 +4,28 @@ import kaiko.game.application;
 import kaiko.game.drawablecollection;
 import kaiko.game.sprite;
 
-final class MainScene {
+final class MainScene(TextureFactory) {
 
-  public void run(TextureFactory, GameUpdater)(TextureFactory textureFactory, GameUpdater gameUpdater) {
+  alias DrawableCollection!(Sprite!(TextureFactory.Texture)) Drawable;
+
+  private Drawable drawable_;
+
+  public this(TextureFactory textureFactory) {
     auto texture = textureFactory.load("d.png");
     auto sprites = new Sprite!(typeof(texture))[2];
     for (int i = 0; i < sprites.length; i++) {
       sprites[i] = new Sprite!(typeof(texture))(texture);
     }
+    this.drawable_ = new Drawable(sprites);
+  }
 
-    foreach (i, sprite; sprites) {
+  @property
+  public Drawable drawable() {
+    return this.drawable_;
+  }
+
+  public void run() {
+    foreach (i, sprite; this.drawable_.values) {
       sprite.affineMatrix.tx = i * 50;
       sprite.affineMatrix.ty = i * 50;
       sprite.z = i;
@@ -34,9 +46,8 @@ final class MainScene {
         colorMatrix[3, 3] = 1;
       }
     }
-    auto drawableCollection = new DrawableCollection!(typeof(sprites[0]))(sprites);
     for (;;) {
-      gameUpdater.update(drawableCollection);
+      core.thread.Fiber.yield();
     }
   }
 
