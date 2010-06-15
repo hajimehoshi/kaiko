@@ -45,8 +45,7 @@ final class Application {
       throw new Exception(sysErrorString(GetLastError()));
     }
     auto textureFactory = device.textureFactory;
-    auto yielder = new Yielder();
-    auto fiber = new Fiber({ scene.run(yielder); });
+    auto fiber = new Fiber({ scene.run({ Fiber.yield(); }); });
     MSG msg;
     while (msg.message != WM_QUIT) {
       if (PeekMessage(&msg, null, 0, 0, PM_REMOVE)) {
@@ -67,14 +66,6 @@ final class Application {
   @property
   public int width() const {
     return this.width_;
-  }
-
-  private final class Yielder {
-
-    public void yield() {
-      Fiber.yield();
-    }
-
   }
 
 }

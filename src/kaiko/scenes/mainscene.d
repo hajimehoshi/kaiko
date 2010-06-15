@@ -24,7 +24,7 @@ final class MainScene(TextureFactory) {
     return this.drawable_;
   }
 
-  public void run(Yielder)(Yielder yielder) {
+  public void run(void delegate() yield) {
     foreach (i, sprite; this.drawable_.values) {
       sprite.affineMatrix.tx = i * 50;
       sprite.affineMatrix.ty = i * 50;
@@ -47,7 +47,7 @@ final class MainScene(TextureFactory) {
       }
     }
     for (;;) {
-      yielder.yield();
+      yield();
     }
   }
 
