@@ -24,8 +24,8 @@ final class MainScene(TextureFactory) {
     assert(yield !is null);
   } body {
     foreach (i, sprite; this.sprites_) {
-      sprite.affineMatrix.tx = i * 50;
-      sprite.affineMatrix.ty = i * 50;
+      //sprite.affineMatrix.tx = i * 0.1;
+      //sprite.affineMatrix.ty = i * 0.1;
       sprite.z = i;
       auto colorMatrix = sprite.colorMatrix;
       if (i == 1) {
@@ -46,7 +46,7 @@ final class MainScene(TextureFactory) {
     }
     auto drawable = new Drawable(this.sprites_);
     for (;;) {
-      this.sprites_[0].affineMatrix.tx += 1;
+      this.sprites_[0].affineMatrix.tx += 0.1;
       yield(drawable);
     }
   }
