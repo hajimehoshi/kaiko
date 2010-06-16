@@ -46,7 +46,7 @@ final class MainScene(TextureFactory) {
     }
     auto drawable = new Drawable(this.sprites_);
     for (;;) {
-      this.sprites_[0].affineMatrix.tx += 0.1;
+      this.sprites_[0].affineMatrix.tx += 0.05;
       yield(drawable);
     }
   }

@@ -133,7 +133,7 @@ final class Device {
       MultiSampleType        = D3DMULTISAMPLE_NONE;
       MultiSampleQuality     = 0;
       Flags                  = 0;
-      PresentationInterval   = D3DPRESENT_INTERVAL_IMMEDIATE;
+      PresentationInterval   = D3DPRESENT_INTERVAL_ONE;
     }
     {
       immutable result = this.direct3D_.CreateDevice(D3DADAPTER_DEFAULT,

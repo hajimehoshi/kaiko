@@ -61,37 +61,35 @@ final class Application {
           });
       });
     MSG msg;
-    LARGE_INTEGER freq, gamePreviousTime, graphicsPreviousTime, secondPreviousTime, now;
+    LARGE_INTEGER freq, gamePreviousTime, secondPreviousTime, now;
     QueryPerformanceCounter(&now);
-    gamePreviousTime = graphicsPreviousTime = secondPreviousTime = now;
+    gamePreviousTime = secondPreviousTime = now;
     long gameFramesPerSecond = 0;
-    long gameFramesPerGraphicsFrame = 0;
     long graphicsFramesPerSecond = 0;
-    QueryPerformanceFrequency(&freq);
+    if (!QueryPerformanceFrequency(&freq) || freq.QuadPart == 0) {
+      throw new Exception("Can't use QueryPerformanceFrequency function");
+    }
     while (msg.message != WM_QUIT) {
       if (PeekMessage(&msg, null, 0, 0, PM_REMOVE)) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
       } else {
         QueryPerformanceCounter(&now);
-        if (1 <= (now.QuadPart - gamePreviousTime.QuadPart) * 600 / freq.QuadPart) {
+        while (1 <= (now.QuadPart - gamePreviousTime.QuadPart) * 600 / freq.QuadPart) {
           assert(fiber.state != Fiber.State.TERM);
           fiber.call();
           if (fiber.state == Fiber.State.TERM) {
             return 0;
           }
-          gamePreviousTime = now;
-          gameFramesPerGraphicsFrame++;
+          // TODO: remove division
+          gamePreviousTime.QuadPart += freq.QuadPart / 600;
           gameFramesPerSecond++;
         }
-        // TODO: swap chain の利用?
-        if (1 <= (now.QuadPart - graphicsPreviousTime.QuadPart) * 60 / freq.QuadPart) {
+        {
           if (drawable !is null) {
             device.update(drawable);
           }
-          graphicsPreviousTime = now;
           graphicsFramesPerSecond++;
-          gameFramesPerGraphicsFrame = 0;
         }
         if (1 <= (now.QuadPart - secondPreviousTime.QuadPart) / freq.QuadPart) {
           std.stdio.writeln("Game Frames: ", gameFramesPerSecond);
