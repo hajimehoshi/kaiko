@@ -24,4 +24,9 @@ final class DrawableCollection(Drawable) {
     return this.drawables_;
   }
 
+  @property
+  public const(Drawable)[] values() const {
+    return this.drawables_;
+  }
+
 }

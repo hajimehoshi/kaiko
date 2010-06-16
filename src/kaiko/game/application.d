@@ -20,7 +20,15 @@ final class Application {
 
   private immutable int width_, height_;
 
-  private this(int width, int height) {
+  invariant() {
+    assert(0 < this.width_);
+    assert(0 < this.height_);
+  }
+
+  private this(int width, int height) in {
+    assert(0 < width);
+    assert(0 < height);
+  } body {
     this.width_ = width;
     this.height_ = height;
   }
@@ -44,8 +52,13 @@ final class Application {
     if (!UpdateWindow(hWnd)) {
       throw new Exception(sysErrorString(GetLastError()));
     }
-    auto textureFactory = device.textureFactory;
-    auto fiber = new Fiber({ scene.run({ Fiber.yield(); }); });
+    scene.Drawable drawable;
+    auto fiber = new Fiber({
+        scene.run((scene.Drawable d) {
+            drawable = d;
+            Fiber.yield();
+          });
+      });
     MSG msg;
     while (msg.message != WM_QUIT) {
       if (PeekMessage(&msg, null, 0, 0, PM_REMOVE)) {
@@ -54,9 +67,12 @@ final class Application {
       } else {
         Sleep(1);
         // 1/600 秒?
+        if (fiber.state == Fiber.State.TERM) {
+          return 0;
+        }
         fiber.call();
-        if (scene.drawable !is null) {
-          device.update(scene.drawable);
+        if (drawable !is null) {
+          device.update(drawable);
         }
       }
     }

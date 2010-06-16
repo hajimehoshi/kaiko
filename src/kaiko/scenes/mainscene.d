@@ -8,24 +8,22 @@ final class MainScene(TextureFactory) {
 
   alias DrawableCollection!(Sprite!(TextureFactory.Texture)) Drawable;
 
-  private Drawable drawable_;
+  private Sprite!(TextureFactory.Texture)[] sprites_;
 
-  public this(TextureFactory textureFactory) {
+  public this(TextureFactory textureFactory) in {
+    assert(textureFactory !is null);
+  } body {
     auto texture = textureFactory.load("d.png");
-    auto sprites = new Sprite!(typeof(texture))[2];
-    for (int i = 0; i < sprites.length; i++) {
-      sprites[i] = new Sprite!(typeof(texture))(texture);
+    this.sprites_ = new Sprite!(typeof(texture))[2];
+    for (int i = 0; i < this.sprites_.length; i++) {
+      this.sprites_[i] = new Sprite!(typeof(texture))(texture);
     }
-    this.drawable_ = new Drawable(sprites);
   }
 
-  @property
-  public Drawable drawable() {
-    return this.drawable_;
-  }
-
-  public void run(void delegate() yield) {
-    foreach (i, sprite; this.drawable_.values) {
+  public void run(Yielder)(Yielder yield) in {
+    assert(yield !is null);
+  } body {
+    foreach (i, sprite; this.sprites_) {
       sprite.affineMatrix.tx = i * 50;
       sprite.affineMatrix.ty = i * 50;
       sprite.z = i;
@@ -46,8 +44,10 @@ final class MainScene(TextureFactory) {
         colorMatrix[3, 3] = 1;
       }
     }
+    auto drawable = new Drawable(this.sprites_);
     for (;;) {
-      yield();
+      this.sprites_[0].affineMatrix.tx += 1;
+      yield(drawable);
     }
   }
 
