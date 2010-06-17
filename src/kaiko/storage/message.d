@@ -11,8 +11,6 @@ enum MessageType {
   DELETE,
 }
 
-import std.stdio;
-
 struct Message {
 
   MessageType type;

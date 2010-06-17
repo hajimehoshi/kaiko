@@ -486,8 +486,6 @@ private immutable(ubyte)[] lengthToBytes(int length)  {
   return bytes;
 }
 
-import std.stdio;
- 
 unittest {
   assert([0x03] == lengthToBytes(3));
   assert([0x7f] == lengthToBytes(127));
