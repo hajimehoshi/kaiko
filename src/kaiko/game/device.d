@@ -340,9 +340,9 @@ technique ColorMatrixFilter
     }
 
     public void drawTexture(Texture)(in Texture texture,
-                                     in AffineMatrix affineMatrix,
+                                     ref const(AffineMatrix) affineMatrix,
                                      int z,
-                                     in ColorMatrix colorMatrix) in {
+                                     ref const(ColorMatrix) colorMatrix) in {
       assert(std.math.isFinite(affineMatrix.a));
       assert(std.math.isFinite(affineMatrix.b));
       assert(std.math.isFinite(affineMatrix.c));
@@ -417,7 +417,6 @@ technique ColorMatrixFilter
                             { width, 0,      z, tu, 0,  },
                             { 0,     height, z, 0,  tv, },
                             { width, height, z, tu, tv, }];
-      this.device_.d3dDevice_.SetTexture(0, texture.lowerTexture);
       this.device_.d3dDevice_.DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertices.ptr, typeof(vertices[0]).sizeof);
     }
 

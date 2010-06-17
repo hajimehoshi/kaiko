@@ -12,62 +12,39 @@ final class Sprite(Texture) {
 
   invariant() {
     assert(this.texture_ !is null);
-    assert(this.affineMatrix_ !is null);
-    assert(this.colorMatrix_ !is null);
   }
 
   public this(Texture texture) {
     this.texture_ = texture;
-    this.affineMatrix_ = new AffineMatrix(1, 0, 0, 1, 0, 0);
-    this.colorMatrix_ = new ColorMatrix();
-
-    this.colorMatrix_[0, 0] = 1;
-    this.colorMatrix_[0, 1] = 0;
-    this.colorMatrix_[0, 2] = 0;
-    this.colorMatrix_[0, 3] = 0;
-    this.colorMatrix_[0, 4] = 0;
-
-    this.colorMatrix_[1, 0] = 0;
-    this.colorMatrix_[1, 1] = 0;
-    this.colorMatrix_[1, 2] = 1;
-    this.colorMatrix_[1, 3] = 0;
-    this.colorMatrix_[1, 4] = 0;
-
-    this.colorMatrix_[2, 0] = 0;
-    this.colorMatrix_[2, 1] = 0;
-    this.colorMatrix_[2, 2] = 1;
-    this.colorMatrix_[2, 3] = 0;
-    this.colorMatrix_[2, 4] = 0;
-    
-    this.colorMatrix_[3, 0] = 0;
-    this.colorMatrix_[3, 1] = 0;
-    this.colorMatrix_[3, 2] = 0;
-    this.colorMatrix_[3, 3] = 1;
-    this.colorMatrix_[3, 4] = 0;
+    this.affineMatrix_ = AffineMatrix(1, 0, 0, 1, 0, 0);
+    this.colorMatrix_ = ColorMatrix([[1, 0, 0, 0, 0],
+                                     [0, 1, 0, 0, 0],
+                                     [0, 0, 1, 0, 0],
+                                     [0, 0, 0, 1, 0]]);
   }
 
   public void draw(GraphicsContext)(GraphicsContext gc) {
-    gc.drawTexture(this.texture, this.affineMatrix, this.z, this.colorMatrix);
+    gc.drawTexture(this.texture_, this.affineMatrix_, this.z_, this.colorMatrix_);
   }
 
   @property
-  public AffineMatrix affineMatrix() {
+  public AffineMatrix affineMatrix() const {
     return this.affineMatrix_;
   }
 
   @property
-  public const(AffineMatrix) affineMatrix() const {
-    return this.affineMatrix_;
+  public AffineMatrix affineMatrix(ref const(AffineMatrix) affineMatrix) {
+    return this.affineMatrix_ = affineMatrix;
   }
 
   @property
-  public ColorMatrix colorMatrix() {
+  public ColorMatrix colorMatrix() const {
     return this.colorMatrix_;
   }
 
   @property
-  public const(ColorMatrix) colorMatrix() const {
-    return this.colorMatrix_;
+  public ColorMatrix colorMatrix(ref const(ColorMatrix) colorMatrix) {
+    return this.colorMatrix_ = colorMatrix;
   }
 
   @property

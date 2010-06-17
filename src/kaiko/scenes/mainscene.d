@@ -43,10 +43,13 @@ final class MainScene(TextureFactory) {
         colorMatrix[0, 4] = 0.5;
         colorMatrix[3, 3] = 1;
       }
+      sprite.colorMatrix = colorMatrix;
     }
     auto drawable = new Drawable(this.sprites_);
     for (;;) {
-      this.sprites_[0].affineMatrix.tx += 0.05;
+      auto a = this.sprites_[0].affineMatrix;
+      a.tx += 0.05;
+      this.sprites_[0].affineMatrix = a;
       yield(drawable);
     }
   }

@@ -2,7 +2,7 @@ module kaiko.game.affinematrix;
 
 private import std.traits;
 
-final class AffineMatrixBase(Float) if (isFloatingPoint!(Float)) {
+struct AffineMatrixBase(Float) if (isFloatingPoint!(Float)) {
 
   public Float a, b, c, d, tx, ty;
 

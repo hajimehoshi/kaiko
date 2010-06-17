@@ -2,7 +2,11 @@ module kaiko.game.colormatrix;
 
 private import std.traits;
 
-final class ColorMatrixBase(Float) if (isFloatingPoint!(Float)) {
+struct ColorMatrixBase(Float) if (isFloatingPoint!(Float)) {
+
+  public this(in Float[5][4] elements) {
+    this.elements_ = elements.dup;
+  }
 
   private Float[5][4] elements_;
 
