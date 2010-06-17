@@ -16,7 +16,8 @@ final class Sprite(Texture) {
 
   public this(Texture texture) {
     this.texture_ = texture;
-    this.affineMatrix_ = AffineMatrix(1, 0, 0, 1, 0, 0);
+    this.affineMatrix_ = AffineMatrix([[1, 0, 0],
+                                       [0, 1, 0]]);
     this.colorMatrix_ = ColorMatrix([[1, 0, 0, 0, 0],
                                      [0, 1, 0, 0, 0],
                                      [0, 0, 1, 0, 0],
