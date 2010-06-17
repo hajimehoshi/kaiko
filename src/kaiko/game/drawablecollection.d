@@ -1,6 +1,6 @@
 module kaiko.game.drawablecollection;
 
-import std.algorithm;
+private import std.algorithm;
 
 final class DrawableCollection(Drawable) {
 

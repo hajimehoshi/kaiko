@@ -1,8 +1,8 @@
 module kaiko.ipc.socketclient;
 
-import std.c.windows.winsock;
-import std.socket;
-import kaiko.ipc.socketserver;
+private import std.c.windows.winsock;
+private import std.socket;
+private import kaiko.ipc.socketserver;
 
 final class SocketClient {
 

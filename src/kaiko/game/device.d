@@ -1,13 +1,13 @@
 module kaiko.game.device;
 
-import std.conv;
-import std.utf;
-import std.windows.syserror;
-import win32.directx.d3d9;
-import win32.directx.d3dx9;
-import kaiko.game.affinematrix;
-import kaiko.game.colormatrix;
-import kaiko.game.texture;
+private import std.conv;
+private import std.utf;
+private import std.windows.syserror;
+private import win32.directx.d3d9;
+private import win32.directx.d3dx9;
+private import kaiko.game.affinematrix;
+private import kaiko.game.colormatrix;
+private import kaiko.game.texture;
 
 align(4) struct D3DXIMAGE_INFO {
   UINT Width;

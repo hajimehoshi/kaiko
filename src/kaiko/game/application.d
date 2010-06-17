@@ -1,10 +1,10 @@
 module kaiko.game.application;
 
-import core.thread;
-import std.windows.syserror;
-import win32.mmsystem;
-import win32.windows;
-import kaiko.game.texture;
+private import core.thread;
+private import std.windows.syserror;
+private import win32.mmsystem;
+private import win32.windows;
+private import kaiko.game.texture;
 
 final class Application {
 

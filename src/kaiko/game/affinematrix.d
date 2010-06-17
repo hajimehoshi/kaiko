@@ -1,6 +1,6 @@
 module kaiko.game.affinematrix;
 
-import std.traits;
+private import std.traits;
 
 final class AffineMatrixBase(Float) if (isFloatingPoint!(Float)) {
 

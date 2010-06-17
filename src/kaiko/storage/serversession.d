@@ -1,6 +1,6 @@
 module kaiko.storage.serversession;
 
-import kaiko.storage.message;
+private import kaiko.storage.message;
 
 final class ServerSession {
 

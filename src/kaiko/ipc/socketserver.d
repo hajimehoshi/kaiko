@@ -1,7 +1,7 @@
 module kaiko.ipc.socketserver;
 
-import std.socket;
-import kaiko.ipc.socketclient;
+private import std.socket;
+private import kaiko.ipc.socketclient;
 
 final class SocketServer {
 

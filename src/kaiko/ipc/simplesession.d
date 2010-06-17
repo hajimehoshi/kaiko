@@ -1,7 +1,7 @@
 module kaiko.ipc.simplesession;
 
 version (unittest) {
-  import kaiko.test.mocktransportclient;
+  private import kaiko.test.mocktransportclient;
 }
 
 final class SimpleSession(TransportClient_) {

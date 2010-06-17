@@ -1,6 +1,6 @@
 module kaiko.ipc.server;
 
-import std.traits;
+private import std.traits;
 
 final class Server(SessionProcessor) {
 

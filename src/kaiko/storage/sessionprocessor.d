@@ -1,7 +1,7 @@
 module kaiko.storage.sessionprocessor;
 
-import kaiko.storage.serversession;
-import kaiko.storage.session;
+private import kaiko.storage.serversession;
+private import kaiko.storage.session;
 
 version (unittest) {
   import kaiko.test.mockipcsession;

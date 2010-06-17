@@ -1,6 +1,6 @@
 module kaiko.game.colormatrix;
 
-import std.traits;
+private import std.traits;
 
 final class ColorMatrixBase(Float) if (isFloatingPoint!(Float)) {
 

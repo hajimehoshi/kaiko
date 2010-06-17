@@ -1,8 +1,8 @@
 module kaiko.game.mainwindow;
 
-import std.utf;
-import std.windows.syserror;
-import win32.windows;
+private import std.utf;
+private import std.windows.syserror;
+private import win32.windows;
 
 final class MainWindow {
 

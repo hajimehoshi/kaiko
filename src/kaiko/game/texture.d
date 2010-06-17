@@ -1,10 +1,10 @@
 module kaiko.game.texture;
 
-import std.utf;
-import std.windows.syserror;
-import win32.directx.d3d9;
-import win32.directx.d3dx9;
-import win32.windows;
+private import std.utf;
+private import std.windows.syserror;
+private import win32.directx.d3d9;
+private import win32.directx.d3dx9;
+private import win32.windows;
 
 final class Texture {
 

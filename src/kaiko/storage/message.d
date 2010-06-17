@@ -1,6 +1,6 @@
 module kaiko.storage.message;
 
-import msgpack.msgpack;
+private import msgpack.msgpack;
 
 enum MessageType {
   SUBCRIBE,

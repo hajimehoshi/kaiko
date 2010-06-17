@@ -1,8 +1,8 @@
 module kaiko.scenes.mainscene;
 
-import kaiko.game.application;
-import kaiko.game.drawablecollection;
-import kaiko.game.sprite;
+private import kaiko.game.application;
+private import kaiko.game.drawablecollection;
+private import kaiko.game.sprite;
 
 final class MainScene(TextureFactory) {
 
