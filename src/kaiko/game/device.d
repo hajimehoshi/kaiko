@@ -5,8 +5,8 @@ private import std.utf;
 private import std.windows.syserror;
 private import win32.directx.d3d9;
 private import win32.directx.d3dx9;
-private import kaiko.game.affinematrix;
 private import kaiko.game.colormatrix;
+private import kaiko.game.geometrymatrix;
 private import kaiko.game.texture;
 
 align(4) struct D3DXIMAGE_INFO {
@@ -83,7 +83,7 @@ final class Device {
                                                         null,
                                                         &d3dTexture);
         if (FAILED(result)) {
-          throw new Exception(std.conv.to!string(result));
+          throw new Exception("D3DXCreateTextureFromFileExW failed: " ~ std.conv.to!string(result));
         }
       }
       D3DXIMAGE_INFO imageInfo;
@@ -123,27 +123,45 @@ final class Device {
     this.textureWidth_ = roundUp(width);
     this.textureHeight_ = roundUp(height);
     this.direct3D_ = Direct3DCreate9(D3D_SDK_VERSION);
+    assert(this.direct3D_ !is null);
     D3DPRESENT_PARAMETERS presentParameters;
     with (presentParameters) {
-      Windowed               = true;
-      SwapEffect             = D3DSWAPEFFECT_DISCARD;
-      BackBufferCount        = 1;
-      EnableAutoDepthStencil = false;
-      AutoDepthStencilFormat = D3DFMT_UNKNOWN;
-      MultiSampleType        = D3DMULTISAMPLE_NONE;
-      MultiSampleQuality     = 0;
-      Flags                  = 0;
-      PresentationInterval   = D3DPRESENT_INTERVAL_ONE;
+      BackBufferFormat           = D3DFMT_UNKNOWN;
+      BackBufferCount            = 1;
+      MultiSampleType            = D3DMULTISAMPLE_NONE;
+      MultiSampleQuality         = 0;
+      SwapEffect                 = D3DSWAPEFFECT_DISCARD;
+      hDeviceWindow              = hWnd;
+      Windowed                   = true;
+      EnableAutoDepthStencil     = false;
+      AutoDepthStencilFormat     = D3DFMT_UNKNOWN;
+      Flags                      = 0;
+      FullScreen_RefreshRateInHz = 0;
+      PresentationInterval       = D3DPRESENT_INTERVAL_ONE;
     }
     {
-      immutable result = this.direct3D_.CreateDevice(D3DADAPTER_DEFAULT,
-                                                     D3DDEVTYPE_HAL,
-                                                     hWnd,
-                                                     D3DCREATE_MIXED_VERTEXPROCESSING,
-                                                     &presentParameters,
-                                                     &this.d3dDevice_);
-      if (FAILED(result)) {
-        throw new Exception(to!string(result));
+      if (FAILED(this.direct3D_.CreateDevice(D3DADAPTER_DEFAULT,
+                                             D3DDEVTYPE_HAL,
+                                             hWnd,
+                                             D3DCREATE_HARDWARE_VERTEXPROCESSING,
+                                             &presentParameters,
+                                             &this.d3dDevice_))) {
+        if (FAILED(this.direct3D_.CreateDevice(D3DADAPTER_DEFAULT,
+                                               D3DDEVTYPE_HAL,
+                                               hWnd,
+                                               D3DCREATE_SOFTWARE_VERTEXPROCESSING,
+                                               &presentParameters,
+                                               &this.d3dDevice_))) {
+          immutable result = this.direct3D_.CreateDevice(D3DADAPTER_DEFAULT,
+                                                          D3DDEVTYPE_REF,
+                                                          hWnd,
+                                                          D3DCREATE_SOFTWARE_VERTEXPROCESSING,
+                                                          &presentParameters,
+                                                          &this.d3dDevice_);
+          if (FAILED(result)) {
+            throw new Exception("IDirect3D9.CreateDevice failed: " ~ to!string(result));
+          }
+        }
       }
     }
     assert(this.d3dDevice_);
@@ -172,7 +190,7 @@ final class Device {
                                                        &this.d3dOffscreenTexture_,
                                                        null);
       if (FAILED(result)) {
-        throw new Exception(to!string(result));
+        throw new Exception("IDirect3D9.CreateTexture failed: " ~ to!string(result));
       }
     }
     assert(this.d3dOffscreenTexture_);
@@ -180,7 +198,7 @@ final class Device {
       immutable result = this.d3dOffscreenTexture_.GetSurfaceLevel(0,
                                                                    &this.d3dOffscreenSurface_);
       if (FAILED(result)) {
-        throw new Exception(to!string(result));
+        throw new Exception("IDirect3DTexture9.GetSurfaceLevel failed: " ~ to!string(result));
       }
     }
     assert(this.d3dOffscreenSurface_);
@@ -190,7 +208,7 @@ final class Device {
                                                        D3DBACKBUFFER_TYPE_MONO,
                                                        &this.d3dBackBufferSurface_);
       if (FAILED(result)) {
-        throw new Exception(to!string(result));
+        throw new Exception("IDirect3D9.GetBackBuffer failed: " ~ to!string(result));
       }
     }
     assert(this.d3dBackBufferSurface_);
@@ -239,9 +257,9 @@ technique ColorMatrixFilter
           immutable len = d3dxBuffer.GetBufferSize();
           string errorStr;
           errorStr ~= errorStrPtr[0..len];
-          throw new Exception(errorStr);
+          throw new Exception("D3DXCreateEffect failed: " ~ errorStr);
         } else {
-          throw new Exception(to!string(result));
+          throw new Exception("D3DXCreateEffect failed: " ~ to!string(result));
         }
       }
     }
@@ -253,27 +271,27 @@ technique ColorMatrixFilter
   }
 
   ~this() {
-    if (this.d3dxEffect_) {
+    if (this.d3dxEffect_ !is null) {
       this.d3dxEffect_.Release();
       this.d3dxEffect_ = null;
     }
-    if (this.d3dBackBufferSurface_) {
+    if (this.d3dBackBufferSurface_ !is null) {
       this.d3dBackBufferSurface_.Release();
       this.d3dBackBufferSurface_ = null;
     }
-    if (this.d3dOffscreenSurface_) {
+    if (this.d3dOffscreenSurface_ !is null) {
       this.d3dOffscreenSurface_.Release();
       this.d3dOffscreenSurface_ = null;
     }
-    if (this.d3dOffscreenTexture_) {
+    if (this.d3dOffscreenTexture_ !is null) {
       this.d3dOffscreenTexture_.Release();
       this.d3dOffscreenTexture_ = null;
     }
-    if (this.d3dDevice_) {
+    if (this.d3dDevice_ !is null) {
       this.d3dDevice_.Release();
       this.d3dDevice_ = null;
     }
-    if (this.direct3D_) {
+    if (this.direct3D_ !is null) {
       this.direct3D_.Release();
       this.direct3D_ = null;
     }
@@ -340,15 +358,15 @@ technique ColorMatrixFilter
     }
 
     public void drawTexture(Texture)(in Texture texture,
-                                     ref const(AffineMatrix) affineMatrix,
+                                     ref const(GeometryMatrix) geometryMatrix,
                                      int z,
                                      ref const(ColorMatrix) colorMatrix) in {
-      assert(std.math.isFinite(affineMatrix.a));
-      assert(std.math.isFinite(affineMatrix.b));
-      assert(std.math.isFinite(affineMatrix.c));
-      assert(std.math.isFinite(affineMatrix.d));
-      assert(std.math.isFinite(affineMatrix.tx));
-      assert(std.math.isFinite(affineMatrix.ty));
+      assert(std.math.isFinite(geometryMatrix.a));
+      assert(std.math.isFinite(geometryMatrix.b));
+      assert(std.math.isFinite(geometryMatrix.c));
+      assert(std.math.isFinite(geometryMatrix.d));
+      assert(std.math.isFinite(geometryMatrix.tx));
+      assert(std.math.isFinite(geometryMatrix.ty));
       foreach (i; 0..4) {
         foreach (j; 0..5) {
           assert(std.math.isFinite(colorMatrix[i, j]));
@@ -401,15 +419,15 @@ technique ColorMatrixFilter
       immutable tv     = cast(float)texture.height / texture.textureHeight;
       D3DXMATRIX d3dxMatrix;
       with (d3dxMatrix) {
-        _11 = affineMatrix.a;
-        _12 = affineMatrix.c;
+        _11 = geometryMatrix.a;
+        _12 = geometryMatrix.c;
         _13 = 0; _14 = 0;
-        _21 = affineMatrix.b;
-        _22 = affineMatrix.d;
+        _21 = geometryMatrix.b;
+        _22 = geometryMatrix.d;
         _23 = 0; _24 = 0;
         _31 = 0; _32 = 0; _33 = 1; _34 = 0;
-        _41 = affineMatrix.tx;
-        _42 = affineMatrix.ty;
+        _41 = geometryMatrix.tx;
+        _42 = geometryMatrix.ty;
         _43 = 0; _44 = 1;
       }
       this.device_.d3dDevice_.SetTransform(D3DTS_VIEW, &d3dxMatrix);

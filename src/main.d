@@ -4,17 +4,15 @@ import kaiko.game.application;
 import kaiko.game.device;
 import kaiko.game.mainwindow;
 import kaiko.scenes.mainscene;
-import kaiko.ipc.simplesession;
+/*import kaiko.ipc.simplesession;
 import kaiko.ipc.server;
 import kaiko.ipc.socketclient;
 import kaiko.ipc.socketserver;
-import kaiko.storage.sessionprocessor;
+import kaiko.storage.sessionprocessor;*/
 
-unittest {
+/*unittest {
   scope Server!(SessionProcessor!(SimpleSession!SocketClient)) server;
-}
-
-import std.stdio;
+  }*/
 
 int main(string[] args) {
   auto application = Application.instance;

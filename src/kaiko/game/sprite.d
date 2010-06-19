@@ -1,12 +1,12 @@
 module kaiko.game.sprite;
 
-private import kaiko.game.affinematrix;
 private import kaiko.game.colormatrix;
+private import kaiko.game.geometrymatrix;
 
 final class Sprite(Texture) {
 
   private Texture texture_;
-  private AffineMatrix affineMatrix_;
+  private GeometryMatrix geometryMatrix_;
   private int z_;
   private ColorMatrix colorMatrix_;
 
@@ -16,7 +16,7 @@ final class Sprite(Texture) {
 
   public this(Texture texture) {
     this.texture_ = texture;
-    this.affineMatrix_ = AffineMatrix([[1, 0, 0],
+    this.geometryMatrix_ = GeometryMatrix([[1, 0, 0],
                                        [0, 1, 0]]);
     this.colorMatrix_ = ColorMatrix([[1, 0, 0, 0, 0],
                                      [0, 1, 0, 0, 0],
@@ -25,17 +25,17 @@ final class Sprite(Texture) {
   }
 
   public void draw(GraphicsContext)(GraphicsContext gc) {
-    gc.drawTexture(this.texture_, this.affineMatrix_, this.z_, this.colorMatrix_);
+    gc.drawTexture(this.texture_, this.geometryMatrix_, this.z_, this.colorMatrix_);
   }
 
   @property
-  public AffineMatrix affineMatrix() const {
-    return this.affineMatrix_;
+  public GeometryMatrix geometryMatrix() const {
+    return this.geometryMatrix_;
   }
 
   @property
-  public AffineMatrix affineMatrix(ref const(AffineMatrix) affineMatrix) {
-    return this.affineMatrix_ = affineMatrix;
+  public GeometryMatrix geometryMatrix(ref const(GeometryMatrix) geometryMatrix) {
+    return this.geometryMatrix_ = geometryMatrix;
   }
 
   @property

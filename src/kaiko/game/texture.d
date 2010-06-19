@@ -37,7 +37,7 @@ final class Texture {
   }
 
   ~this() {
-    if (this.d3dTexture_) {
+    if (this.d3dTexture_ !is null) {
       this.d3dTexture_.Release();
       this.d3dTexture_ = null;
     }

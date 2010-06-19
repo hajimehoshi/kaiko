@@ -75,6 +75,8 @@ final class Application {
         DispatchMessage(&msg);
       } else {
         QueryPerformanceCounter(&now);
+        // TODO: あまりにも差がある場合の考慮
+        // TODO: 600 の定数化
         while (1 <= (now.QuadPart - gamePreviousTime.QuadPart) * 600 / freq.QuadPart) {
           assert(fiber.state != Fiber.State.TERM);
           fiber.call();

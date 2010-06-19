@@ -1,8 +1,8 @@
-module kaiko.game.affinematrix;
+module kaiko.game.geometrymatrix;
 
 private import std.traits;
 
-struct AffineMatrixBase(Float) if (isFloatingPoint!(Float)) {
+struct GeometryMatrixBase(Float) if (isFloatingPoint!(Float)) {
 
   public Float[3][2] elements;
 
@@ -68,4 +68,4 @@ struct AffineMatrixBase(Float) if (isFloatingPoint!(Float)) {
 
 }
 
-alias AffineMatrixBase!double AffineMatrix;
+alias GeometryMatrixBase!double GeometryMatrix;

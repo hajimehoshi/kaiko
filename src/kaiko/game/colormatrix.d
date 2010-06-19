@@ -4,6 +4,8 @@ private import std.traits;
 
 struct ColorMatrixBase(Float) if (isFloatingPoint!(Float)) {
 
+  // TODO: mixin AffineMatrix!(5, Float)
+
   public Float[5][4] elements;
 
   public Float opIndex(int i, int j) const in {
