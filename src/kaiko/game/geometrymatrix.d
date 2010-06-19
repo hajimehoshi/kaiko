@@ -1,10 +1,11 @@
 module kaiko.game.geometrymatrix;
 
 private import std.traits;
+private import kaiko.game.affinematrix;
 
 struct GeometryMatrixBase(Float) if (isFloatingPoint!(Float)) {
 
-  public Float[3][2] elements;
+  mixin AffineMatrix!(Float, 3);
 
   @property
   public Float a() const {
