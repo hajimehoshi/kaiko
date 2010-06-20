@@ -24,12 +24,22 @@ final class MainScene(TextureFactory) {
     }
 
     @property
-    public ref typeof(sprites_) sprites() {
+    public auto ref sprites() {
       return this.sprites_;
     }
 
     @property
-    public ref TextRenderer[] textRenderers() {
+    public const auto ref sprites() {
+      return this.sprites_;
+    }
+
+    @property
+    public auto ref textRenderers() {
+      return this.textRenderers_;
+    }
+
+    @property
+    public const auto ref textRenderers() {
       return this.textRenderers_;
     }
     
@@ -73,12 +83,11 @@ final class MainScene(TextureFactory) {
         colorMatrix[0, 4] = 0.5;
         colorMatrix[3, 3] = 1;
       }
-      sprite.colorMatrix = colorMatrix;
     }
     for (;;) {
-      auto a = this.drawable_.sprites[0].geometryMatrix;
-      a.tx = a.tx + 0.05;
-      this.drawable_.sprites[0].geometryMatrix = a;
+      double x = this.drawable_.sprites[0].geometryMatrix.tx;
+      x += 0.05;
+      this.drawable_.sprites[0].geometryMatrix.tx = x;
       yield(this.drawable_);
     }
   }

@@ -13,16 +13,20 @@ final class Sprite(Texture) {
 
   invariant() {
     assert(this.texture_ !is null);
+    assert(this.geometryMatrix_ !is null);
+    assert(this.colorMatrix_ !is null);
   }
 
-  public this(Texture texture) {
+  public this(Texture texture) in {
+    assert(texture !is null);
+  } body {
     this.texture_ = texture;
-    this.geometryMatrix_ = GeometryMatrix([[1, 0, 0],
-                                           [0, 1, 0]]);
-    this.colorMatrix_ = ColorMatrix([[1, 0, 0, 0, 0],
-                                     [0, 1, 0, 0, 0],
-                                     [0, 0, 1, 0, 0],
-                                     [0, 0, 0, 1, 0]]);
+    this.geometryMatrix_ = new GeometryMatrix([[1, 0, 0],
+                                               [0, 1, 0]]);
+    this.colorMatrix_ = new ColorMatrix([[1, 0, 0, 0, 0],
+                                         [0, 1, 0, 0, 0],
+                                         [0, 0, 1, 0, 0],
+                                         [0, 0, 0, 1, 0]]);
   }
 
   public void draw(GraphicsContext)(GraphicsContext gc) {
@@ -30,23 +34,23 @@ final class Sprite(Texture) {
   }
 
   @property
-  public GeometryMatrix geometryMatrix() const {
+  public GeometryMatrix geometryMatrix() {
     return this.geometryMatrix_;
   }
 
   @property
-  public GeometryMatrix geometryMatrix(ref const(GeometryMatrix) geometryMatrix) {
-    return this.geometryMatrix_ = geometryMatrix;
+  public const(GeometryMatrix) geometryMatrix() const {
+    return this.geometryMatrix_;
   }
 
   @property
-  public ColorMatrix colorMatrix() const {
+  public ColorMatrix colorMatrix() {
     return this.colorMatrix_;
   }
 
   @property
-  public ColorMatrix colorMatrix(ref const(ColorMatrix) colorMatrix) {
-    return this.colorMatrix_ = colorMatrix;
+  public const(ColorMatrix) colorMatrix() const {
+    return this.colorMatrix_;
   }
 
   @property
@@ -65,8 +69,8 @@ final class Sprite(Texture) {
   }
 
   @property
-  public void z(int z) {
-    this.z_ = z;
+  public int z(int z) {
+    return this.z_ = z;
   }
   
 }

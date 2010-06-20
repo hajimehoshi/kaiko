@@ -4,9 +4,9 @@ import kaiko.game.color;
 
 final class TextRenderer {
 
-  public string text_;
-  public int x_, y_;
-  public Color color_;
+  private string text_;
+  private int x_, y_;
+  private Color color_;
 
   public this(string text, int x, int y, ref const(Color) color) {
     this.text_ = text;
@@ -20,7 +20,12 @@ final class TextRenderer {
   }
 
   @property
-  public Color color() const {
+  public ref Color color() {
+    return this.color_;
+  }
+
+  @property
+  public ref const(Color) color() const {
     return this.color_;
   }
 
