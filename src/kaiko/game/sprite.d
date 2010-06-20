@@ -1,5 +1,6 @@
 module kaiko.game.sprite;
 
+private import kaiko.game.color;
 private import kaiko.game.colormatrix;
 private import kaiko.game.geometrymatrix;
 
@@ -17,7 +18,7 @@ final class Sprite(Texture) {
   public this(Texture texture) {
     this.texture_ = texture;
     this.geometryMatrix_ = GeometryMatrix([[1, 0, 0],
-                                       [0, 1, 0]]);
+                                           [0, 1, 0]]);
     this.colorMatrix_ = ColorMatrix([[1, 0, 0, 0, 0],
                                      [0, 1, 0, 0, 0],
                                      [0, 0, 1, 0, 0],

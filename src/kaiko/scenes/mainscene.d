@@ -1,29 +1,59 @@
 module kaiko.scenes.mainscene;
 
+private import std.algorithm;
 private import kaiko.game.application;
-private import kaiko.game.drawablecollection;
+private import kaiko.game.color;
 private import kaiko.game.sprite;
+private import kaiko.game.textrenderer;
 
 final class MainScene(TextureFactory) {
 
-  alias DrawableCollection!(Sprite!(TextureFactory.Texture)) Drawable;
+  private class Drawable {
 
-  private Sprite!(TextureFactory.Texture)[] sprites_;
+    private Sprite!(TextureFactory.Texture)[] sprites_;
+    private TextRenderer[] textRenderers_;
+
+    public void draw(GraphicsContext)(GraphicsContext gc) {
+      sort!(q{a.z < b.z})(this.sprites_);
+      foreach (sprite; this.sprites_) {
+        sprite.draw(gc);
+      }
+      foreach (textRenderer; this.textRenderers_) {
+        textRenderer.draw(gc);
+      }
+    }
+
+    @property
+    public ref typeof(sprites_) sprites() {
+      return this.sprites_;
+    }
+
+    @property
+    public ref TextRenderer[] textRenderers() {
+      return this.textRenderers_;
+    }
+    
+  }
+
+  private Drawable drawable_;
 
   public this(TextureFactory textureFactory) in {
     assert(textureFactory !is null);
   } body {
+    this.drawable_ = new Drawable();
     auto texture = textureFactory.load("d.png");
-    this.sprites_ = new Sprite!(typeof(texture))[2];
-    for (int i = 0; i < this.sprites_.length; i++) {
-      this.sprites_[i] = new Sprite!(typeof(texture))(texture);
+    this.drawable_.sprites.length = 2;
+    for (int i = 0; i < this.drawable_.sprites.length; i++) {
+      this.drawable_.sprites[i] = new Sprite!(typeof(texture))(texture);
     }
+    this.drawable_.textRenderers.length = 1;
+    this.drawable_.textRenderers[0] = new TextRenderer("hoge", 10, 10, Color(0xff, 0xff, 0x99, 0x99));
   }
 
   public void run(Yielder)(Yielder yield) in {
     assert(yield !is null);
   } body {
-    foreach (i, sprite; this.sprites_) {
+    foreach (i, sprite; this.drawable_.sprites) {
       //sprite.geometryMatrix.tx = i * 0.1;
       //sprite.geometryMatrix.ty = i * 0.1;
       sprite.z = i;
@@ -45,12 +75,11 @@ final class MainScene(TextureFactory) {
       }
       sprite.colorMatrix = colorMatrix;
     }
-    auto drawable = new Drawable(this.sprites_);
     for (;;) {
-      auto a = this.sprites_[0].geometryMatrix;
+      auto a = this.drawable_.sprites[0].geometryMatrix;
       a.tx = a.tx + 0.05;
-      this.sprites_[0].geometryMatrix = a;
-      yield(drawable);
+      this.drawable_.sprites[0].geometryMatrix = a;
+      yield(this.drawable_);
     }
   }
 

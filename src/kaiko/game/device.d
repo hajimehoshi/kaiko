@@ -3,8 +3,11 @@ module kaiko.game.device;
 private import std.conv;
 private import std.utf;
 private import std.windows.syserror;
+private import win32.wingdi;
+private import win32.windows;
 private import win32.directx.d3d9;
 private import win32.directx.d3dx9;
+private import kaiko.game.color;
 private import kaiko.game.colormatrix;
 private import kaiko.game.geometrymatrix;
 private import kaiko.game.texture;
@@ -101,6 +104,7 @@ final class Device {
   private IDirect3DSurface9 d3dOffscreenSurface_;
   private IDirect3DSurface9 d3dBackBufferSurface_;
   private ID3DXEffect d3dxEffect_;
+  private HANDLE hFont_;
   private TextureFactory!Texture textureFactory_;
   private GraphicsContext graphicsContext_;
 
@@ -229,8 +233,7 @@ struct PixelIn {
 float4 PS(PixelIn p) : COLOR
 {
   float4 color = tex2D(TextureSampler, p.TexUV);
-  color += ColorMatrixTranslation;
-  return mul(ColorMatrix, color);
+  return mul(ColorMatrix, color) + ColorMatrixTranslation;
 }
 
 technique ColorMatrixFilter
@@ -266,11 +269,32 @@ technique ColorMatrixFilter
     assert(this.d3dxEffect_);
     {
       auto techniqueName = "ColorMatrixFilter\0".dup;
-      this.d3dxEffect_.SetTechnique(techniqueName.ptr);
+      immutable result = this.d3dxEffect_.SetTechnique(techniqueName.ptr);
+      if (FAILED(result)) {
+        throw new Exception("IDirect3DEffect9.SetTechnique failed: " ~ to!string(result));
+      }
+    }
+    {
+      immutable fontResourceSrc = FindResource(null, toUTF16z("FONT"), toUTF16z("DATA"));
+      assert(fontResourceSrc);
+      immutable fontResource = LoadResource(null, fontResourceSrc);
+      assert(fontResource);
+      auto fontImage = LockResource(fontResource);
+      assert(fontImage);
+      immutable fontImageSize = SizeofResource(null, fontResourceSrc);
+      assert(fontImageSize);
+      DWORD fontCount = 0;
+      this.hFont_ = AddFontMemResourceEx(fontImage, fontImageSize, null, &fontCount);
+      assert(this.hFont_);
+      assert(fontCount);
     }
   }
 
   ~this() {
+    if (this.hFont_) {
+      RemoveFontMemResourceEx(this.hFont_);
+      this.hFont_ = null;
+    }
     if (this.d3dxEffect_ !is null) {
       this.d3dxEffect_.Release();
       this.d3dxEffect_ = null;
@@ -346,6 +370,7 @@ technique ColorMatrixFilter
   private final class GraphicsContext {
 
     private Device device_;
+    private ID3DXFont d3dxFont_;
 
     invariant() {
       assert(this.device_ !is null);
@@ -355,6 +380,30 @@ technique ColorMatrixFilter
       assert(device !is null);
     } body {
       this.device_ = device;
+      {
+        immutable result = D3DXCreateFontW(this.device_.d3dDevice_,
+                                           13, // 11 or 13
+                                           6, // 5 or 6
+                                           FW_NORMAL,
+                                           1,
+                                           false,
+                                           DEFAULT_CHARSET,
+                                           OUT_DEFAULT_PRECIS,
+                                           DEFAULT_QUALITY,
+                                           DEFAULT_PITCH | FF_SCRIPT,
+                                           toUTF16z("BDF M+"),
+                                           &this.d3dxFont_);
+        if (FAILED(result)) {
+          throw new Exception("D3DXCreateFont failed: " ~ to!string(result));
+        }
+      }
+    }
+    
+    ~this() {
+      if (this.d3dxFont_) {
+        this.d3dxFont_.Release();
+        this.d3dxFont_ = null;
+      }
     }
 
     public void drawTexture(Texture)(in Texture texture,
@@ -436,6 +485,20 @@ technique ColorMatrixFilter
                             { 0,     height, z, 0,  tv, },
                             { width, height, z, tu, tv, }];
       this.device_.d3dDevice_.DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertices.ptr, typeof(vertices[0]).sizeof);
+    }
+
+    public void drawText(string text, int x, int y, Color color) {
+      if (!text.length) {
+        return;
+      }
+      immutable utf16Text = toUTF16(text);
+      RECT rect = { x, y, 0, 0 };
+      this.d3dxFont_.DrawTextW(null, utf16Text.ptr, utf16Text.length, &rect,
+                               win32.directx.d3dx9.DT_CALCRECT,
+                               0);
+      this.d3dxFont_.DrawTextW(null, utf16Text.ptr, utf16Text.length, &rect,
+                               win32.directx.d3dx9.DT_LEFT | win32.directx.d3dx9.DT_BOTTOM,
+                               D3DCOLOR_ARGB(color.alpha, color.red, color.green, color.blue));
     }
 
   }

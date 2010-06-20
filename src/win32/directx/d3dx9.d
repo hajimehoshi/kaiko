@@ -1218,7 +1218,21 @@ extern(Windows)
 		DWORD OutputPrecision,
 		DWORD Quality,
 		DWORD PitchAndFamily,
-		LPCTSTR pFacename,
+		LPCSTR pFacename,
+		ID3DXFont *ppFont);
+
+        HRESULT D3DXCreateFontW(
+        IDirect3DDevice9 pDevice,
+		UINT Height,
+		UINT Width,
+		UINT Weight,
+		UINT MipLevels,
+		BOOL Italic,
+		DWORD CharSet,
+		DWORD OutputPrecision,
+		DWORD Quality,
+		DWORD PitchAndFamily,
+		LPCWSTR pFacename,
 		ID3DXFont *ppFont);
 
 	HRESULT D3DXCreateSprite(
