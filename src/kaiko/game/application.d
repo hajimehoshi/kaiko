@@ -1,5 +1,6 @@
 module kaiko.game.application;
 
+private import core.memory;
 private import core.thread;
 private import std.windows.syserror;
 private import win32.mmsystem;
@@ -53,53 +54,55 @@ final class Application {
     if (!UpdateWindow(hWnd)) {
       throw new Exception(sysErrorString(GetLastError()));
     }
-    scene.Drawable drawable;
+    scene.Renderer renderer;
     auto fiber = new Fiber({
-        scene.run((scene.Drawable d) {
-            drawable = d;
+        scene.run((scene.Renderer r) {
+            renderer = r;
             Fiber.yield();
           });
       });
     MSG msg;
-    LARGE_INTEGER freq, gamePreviousTime, secondPreviousTime, now;
-    QueryPerformanceCounter(&now);
-    gamePreviousTime = secondPreviousTime = now;
-    long gameFramesPerSecond = 0;
-    long graphicsFramesPerSecond = 0;
-    if (!QueryPerformanceFrequency(&freq) || freq.QuadPart == 0) {
+    LARGE_INTEGER largeIntegerFreq;
+    if (!QueryPerformanceFrequency(&largeIntegerFreq) || largeIntegerFreq.QuadPart == 0) {
       throw new Exception("Can't use QueryPerformanceFrequency function");
     }
+    immutable freq = largeIntegerFreq.QuadPart;
+    immutable GAME_FPS = 600;
+    LARGE_INTEGER largeIntegerNow;
+    QueryPerformanceCounter(&largeIntegerNow);
+    auto gamePreviousTimeXGameFps = largeIntegerNow.QuadPart * GAME_FPS;
+    auto secondPreviousTime       = largeIntegerNow.QuadPart;
+    auto gameFramesPerSecond      = 0L;
+    auto graphicsFramesPerSecond  = 0L;
     while (msg.message != WM_QUIT) {
       if (PeekMessage(&msg, null, 0, 0, PM_REMOVE)) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
-      } else {
-        QueryPerformanceCounter(&now);
-        // TODO: あまりにも差がある場合の考慮
-        // TODO: 600 の定数化
-        while (1 <= (now.QuadPart - gamePreviousTime.QuadPart) * 600 / freq.QuadPart) {
-          assert(fiber.state != Fiber.State.TERM);
-          fiber.call();
-          if (fiber.state == Fiber.State.TERM) {
-            return 0;
-          }
-          // TODO: remove division
-          gamePreviousTime.QuadPart += freq.QuadPart / 600;
-          gameFramesPerSecond++;
+        continue;
+      }
+      QueryPerformanceCounter(&largeIntegerNow);
+      immutable now = largeIntegerNow.QuadPart;
+      // TODO: あまりにも差がある場合の考慮
+      while (freq <= (now * GAME_FPS - gamePreviousTimeXGameFps)) {
+        assert(fiber.state != Fiber.State.TERM);
+        fiber.call();
+        if (fiber.state == Fiber.State.TERM) {
+          return 0;
         }
-        {
-          if (drawable !is null) {
-            device.update(drawable);
-          }
-          graphicsFramesPerSecond++;
-        }
-        if (1 <= (now.QuadPart - secondPreviousTime.QuadPart) / freq.QuadPart) {
-          std.stdio.writeln("Game Frames: ", gameFramesPerSecond);
-          std.stdio.writeln("Graphics Frames: ", graphicsFramesPerSecond);
-          secondPreviousTime = now;
-          gameFramesPerSecond = 0;
-          graphicsFramesPerSecond = 0;
-        }
+        gamePreviousTimeXGameFps += freq;
+        gameFramesPerSecond++;
+      }
+      if (renderer !is null) {
+        // wait for v-sync
+        device.update(renderer);
+      }
+      graphicsFramesPerSecond++;
+      if (freq <= (now - secondPreviousTime)) {
+        std.stdio.writeln("Game Frames: ", gameFramesPerSecond);
+        std.stdio.writeln("Graphics Frames: ", graphicsFramesPerSecond);
+        secondPreviousTime = now;
+        gameFramesPerSecond = 0;
+        graphicsFramesPerSecond = 0;
       }
     }
     return cast(int)msg.wParam;

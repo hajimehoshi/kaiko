@@ -8,7 +8,7 @@ private import kaiko.game.textrenderer;
 
 final class MainScene(TextureFactory) {
 
-  private class Drawable {
+  private class Renderer {
 
     private Sprite!(TextureFactory.Texture)[] sprites_;
     private TextRenderer[] textRenderers_;
@@ -29,41 +29,31 @@ final class MainScene(TextureFactory) {
     }
 
     @property
-    public const auto ref sprites() {
-      return this.sprites_;
-    }
-
-    @property
     public auto ref textRenderers() {
       return this.textRenderers_;
     }
 
-    @property
-    public const auto ref textRenderers() {
-      return this.textRenderers_;
-    }
-    
   }
 
-  private Drawable drawable_;
+  private Renderer renderer_;
 
   public this(TextureFactory textureFactory) in {
     assert(textureFactory !is null);
   } body {
-    this.drawable_ = new Drawable();
+    this.renderer_ = new Renderer();
     auto texture = textureFactory.load("d.png");
-    this.drawable_.sprites.length = 2;
-    for (int i = 0; i < this.drawable_.sprites.length; i++) {
-      this.drawable_.sprites[i] = new Sprite!(typeof(texture))(texture);
+    this.renderer_.sprites.length = 2;
+    for (int i = 0; i < this.renderer_.sprites.length; i++) {
+      this.renderer_.sprites[i] = new Sprite!(typeof(texture))(texture);
     }
-    this.drawable_.textRenderers.length = 1;
-    this.drawable_.textRenderers[0] = new TextRenderer("hoge", 10, 10, Color(0xff, 0xff, 0x99, 0x99));
+    this.renderer_.textRenderers.length = 1;
+    this.renderer_.textRenderers[0] = new TextRenderer("hoge", 10, 10, Color(0xff, 0xff, 0x99, 0x99));
   }
 
   public void run(Yielder)(Yielder yield) in {
     assert(yield !is null);
   } body {
-    foreach (i, sprite; this.drawable_.sprites) {
+    foreach (i, sprite; this.renderer_.sprites) {
       //sprite.geometryMatrix.tx = i * 0.1;
       //sprite.geometryMatrix.ty = i * 0.1;
       sprite.z = i;
@@ -85,10 +75,9 @@ final class MainScene(TextureFactory) {
       }
     }
     for (;;) {
-      double x = this.drawable_.sprites[0].geometryMatrix.tx;
-      x += 0.05;
-      this.drawable_.sprites[0].geometryMatrix.tx = x;
-      yield(this.drawable_);
+      auto geometryMatrix = this.renderer_.sprites[0].geometryMatrix;
+      geometryMatrix.tx = geometryMatrix.tx + 0.05;
+      yield(this.renderer_);
     }
   }
 
